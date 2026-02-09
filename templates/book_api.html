@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>books</title>
+</head>
+<body>
+    <nav>
+    <a href="index.html">หน้าแรก</a> | <a href="add.html">เพิ่มหนังสือ</a>
+</nav>
+<h1>คลังหนังสือ</h1>
+<ul id="book-list"></ul>
+
+<script>
+    fetch('http://localhost:5000/api/books')
+        .then(res => res.json())
+        .then(data => {
+            const list = document.getElementById('book-list');
+            data.forEach(b => {
+                const li = document.createElement('li');
+                li.innerHTML = `<b>${b.title}</b> - ${b.author}`;
+                list.appendChild(li);
+            });
+        });
+</script>
+</body>
+</html>

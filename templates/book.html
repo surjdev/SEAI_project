@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Books</title>
+</head>
+<body>
+    <h1>รายการหนังสือในระบบ</h1>
+<table border="1">
+    <tr>
+        <th>ID</th>
+        <th>ชื่อหนังสือ</th>
+    </tr>
+    {% for book in books %}
+    <tr>
+        <td>{{ book.book_id }}</td>
+        <td>{{ book.title }}</td>
+    </tr>
+    {% endfor %}
+</table>
+    
+</body>
+</html>   
