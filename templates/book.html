@@ -3,22 +3,82 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Books</title>
+    <title>คลังหนังสือ (Frontend Service)</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background-color: #007bff; color: white; }
+        tr:nth-child(even) { background-color: #f9f9f9; }
+        tr:hover { background-color: #f1f1f1; }
+        .loading { font-style: italic; color: #666; }
+    </style>
 </head>
 <body>
-    <h1>รายการหนังสือในระบบ</h1>
-<table border="1">
-    <tr>
-        <th>ID</th>
-        <th>ชื่อหนังสือ</th>
-    </tr>
-    {% for book in books %}
-    <tr>
-        <td>{{ book.book_id }}</td>
-        <td>{{ book.title }}</td>
-    </tr>
-    {% endfor %}
-</table>
-    
+    <nav>
+        <a href="/">หน้าแรก</a> | <a href="/add">เพิ่มหนังสือ</a>
+    </nav>
+
+    <h1>คลังหนังสือ</h1>
+    <p id="status" class="loading">กำลังดึงข้อมูลจาก API Service...</p>
+
+    <table id="book-table" style="display:none;">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>ชื่อหนังสือ</th>
+                <th>ผู้เขียน</th>
+            </tr>
+        </thead>
+        <tbody id="book-body">
+            </tbody>
+    </table>
+
+    <script>
+        // ทำหน้าที่เป็น Client-side Service ในสถาปัตยกรรม Microservices
+        async function fetchBooks() {
+            try {
+                // เรียกไปยัง Backend API Endpoint
+                const response = await fetch('http://localhost:5000/api/books');
+                
+                if (!response.ok) throw new Error('Network response was not ok');
+                
+                const data = await response.json();
+                const tbody = document.getElementById('book-body');
+                const statusText = document.getElementById('status');
+                const table = document.getElementById('book-table');
+
+                tbody.innerHTML = ''; // ล้างข้อมูลเดิม
+
+                data.forEach(b => {
+                    const row = document.createElement('tr');
+                    
+                    // จัดการข้อมูล authors (List) ให้เป็นข้อความที่อ่านง่าย
+                    const authorNames = (b.authors && b.authors.length > 0) 
+                                        ? b.authors.join(', ') 
+                                        : 'Unknown';
+
+                    row.innerHTML = `
+                        <td>${b.book_id}</td>
+                        <td><b>${b.title}</b></td>
+                        <td>${authorNames}</td>
+                    `;
+                    tbody.appendChild(row);
+                });
+
+                // ซ่อนข้อความ Loading และแสดงตาราง
+                statusText.style.display = 'none';
+                table.style.display = 'table';
+
+            } catch (error) {
+                console.error('Fetch error:', error);
+                document.getElementById('status').innerText = 'เกิดข้อผิดพลาดในการเชื่อมต่อกับ API Service';
+                document.getElementById('status').style.color = 'red';
+            }
+        }
+
+        // เริ่มทำงานเมื่อโหลดหน้าเว็บ
+        fetchBooks();
+    </script>
 </body>
-</html>   
+</html>
