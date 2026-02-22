@@ -4,15 +4,24 @@ from flask import Flask, render_template, jsonify , request
 from flask_login import LoginManager, UserMixin, login_required, current_user
 from auth import auth_bp, oauth
 
-# database and models
+# database
 from database import SessionLocal
+from flask_cors import CORS
+
+# models
 from models.Book import Book
+from models.User import User  # อันนี้คือ User ที่เป็น Model จากฐานข้อมูล
+
+# Controllers
+from Controllers.user_controller import get_all_user
 from Controllers.book_controller import get_books_formatted
+
 
 load_dotenv()
 
 app = Flask(__name__)
 app.secret_key = os.getenv('FLASK_SECRET_ID') # Keep this safe!
+CORS(app)
 
 # Flask-Login Setup
 login_manager = LoginManager()
@@ -24,7 +33,7 @@ oauth.init_app(app)
 app.register_blueprint(auth_bp, url_prefix='/auth')
 
 # Simple User class for demonstration
-class User(UserMixin):
+class LoginUser(UserMixin):
     def __init__(self, id, name):
         self.id = id
         self.name = name
@@ -32,7 +41,7 @@ class User(UserMixin):
 @login_manager.user_loader
 def load_user(user_id):
     # In a real app, query your Database: return User.query.get(user_id)
-    return User(id=user_id, name="User Name")
+    return LoginUser(id=user_id, name="User Name")
 
 @app.route('/')
 def index():
@@ -43,18 +52,26 @@ def index():
 def secret_page():
     return "This is a hidden family page only for logged-in users."
 
+
+
 #test database and models
 @app.route('/books')
 def books_page():
-    # หน้าที่ของมันมีแค่ "ส่งหน้ากาก HTML" ไปให้ Browser
-    # แล้วเดี๋ยว JavaScript ใน HTML จะทำหน้าที่ไปคุยกับ API เอง
     return render_template('book.html') 
-
 
 @app.route('/api/books')
 def get_books_api():
     data = get_books_formatted() 
     return jsonify(data)
+
+@app.route('/api/users') 
+def get_all_users_api():
+    data = get_all_user() 
+    return jsonify(data)
+
+@app.route('/all-users')
+def all_users_page():
+    return render_template('all_users.html')
 
 if __name__ == '__main__':
     app.run(debug=True)

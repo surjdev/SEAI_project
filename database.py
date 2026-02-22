@@ -16,16 +16,6 @@ DB_HOST = os.getenv('HOST')
 DB_PORT = os.getenv('PORT')
 DB_NAME = os.getenv('DATABASE')
 
-
-# app = Flask(__name__)
-# conn = psycopg2.connect(
-#           host = DB_HOST,
-#           port = DB_PORT,
-#           database = DB_NAME,
-#           user = DB_USER,
-#           password = DB_PASS
-# )
-
 DATABASE_URL = f"postgresql://{DB_USER}:{DB_PASS}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
 
 engine = create_engine(DATABASE_URL)
@@ -40,12 +30,3 @@ def get_db():
     finally:
         db.close()
 
-# cur = conn.cursor()
-# @app.route('/')
-# def index():
-#           cur.execute("SELECT * FROM books")
-#           records = cur.fetchall()
-#           return get_db()
-# app.run(debug=True, port=5000)
-# cur.close()
-# conn.close()
