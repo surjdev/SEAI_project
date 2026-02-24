@@ -1,0 +1,30 @@
+Product Backlog,Task,Points,Person,Day
+AI system Design,AI Model Design,11,God,10
+AI Pipeline,Data Collection,3,God,1
+AI Pipeline,Data preparation,5,Nob,10
+AI Pipeline,Data preprocessing,3,,1
+AI Pipeline,Select Algorithm & Train Model & Evaluation,3,,1
+AI Pipeline,AI Model Deploy (API),5,,1
+UI/UX Design,Wireframe - Template,2,Putter,1
+UI/UX Design,"Wireframe - Profile Page, Search Result Page",2,Chang ,1
+UI/UX Design,Wireframe - Landing Page,2,Khong,1
+Frontend,Front-end - Book Detail Page,3,Chang ,3
+Frontend,Front-end - Search Result Page,3,Putter,1
+Frontend,Front-end - Book Rating&Comment Page,3,,1
+Frontend,Front-end - Book Recommend Page,3,คนทําคนเดียวกัน,1
+Frontend,Front-end - Landing Page,3,,2
+Frontend,Front-end - Profile Page,3,Putter,1
+Frontend,Top bar navigation,2,,1
+Login system,Authentication,3,,2
+Login system,Google User Login,3,,2
+Login system,Insert User to database,3,,1
+Backend System,Favourite Feature,3,,1
+Backend System,Wishlist Feature,3,Chang,1
+Backend System,Rating & Comment system,3,,2
+Backend System,Reccomendation System,3,,2
+Backend System,Book Search & Retrive System,3,,2
+Backend System,Book Detail Retrive System,3,Nob,2
+Backend System,Implementation ORM,5,Peach,3
+Database, Design Database,3,Peach,2
+Database,Database Implementation(postgresql),3,Peach,2
+Database,Load data to Database(Aiven) ,3,Peach,1
