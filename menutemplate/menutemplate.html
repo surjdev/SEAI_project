@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ANYAO - Book Recommendation</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --bg-dark: #0b0e14;
+            --search-bg: #ffffff;
+            --user-blue: #4a90e2;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', sans-serif;
+            background-color: #1a1d23;
+        }
+
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: var(--bg-dark);
+            padding: 0 45px;
+            height: 90px;
+            color: white;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .nav-left {
+            flex: 1;
+        }
+
+        .logo-img {
+            height: 45px;
+            cursor: pointer;
+        }
+
+        .nav-center {
+            flex: 2;
+            display: flex;
+            justify-content: center;
+        }
+
+        .search-container {
+            position: relative;
+            width: 100%;
+            max-width: 550px;
+            display: flex;
+            align-items: center;
+        }
+
+        .search-input {
+            width: 100%;
+            height: 44px;
+            padding: 0 45px;
+            border-radius: 12px;
+            border: none;
+            outline: none;
+            font-size: 16px;
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 15px;
+            color: #777;
+        }
+
+        .clear-btn {
+            position: absolute;
+            right: 15px;
+            background: none;
+            border: none;
+            color: #777;
+            cursor: pointer;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+        }
+
+        .nav-right {
+            flex: 1;
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-decoration: none;
+            color: white;
+            min-width: 85px;
+        }
+
+        .icon-box {
+            height: 38px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 5px;
+        }
+
+        .nav-item i {
+            font-size: 24px;
+        }
+
+        .nav-item span {
+            font-size: 12px;
+            font-weight: 500;
+            white-space: nowrap;
+        }
+
+        .user-profile-img {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            object-fit: cover;
+            /* ทำให้รูปไม่เบี้ยว */
+            background-color: var(--user-blue);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            border: 2px solid transparent;
+            transition: border 0.3s;
+        }
+
+        .nav-item:hover .user-profile-img {
+            border: 2px solid #4ee2c0;
+        }
+
+        .user-profile-img img {
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+</head>
+
+<body>
+
+    <nav class="navbar">
+        <div class="nav-left">
+            <img src="/ANYAO.png" alt="ANYAO" class="logo-img">
+        </div>
+
+        <div class="nav-center">
+            <div class="search-container">
+                <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                <input type="text" id="searchInput" placeholder="Search..." class="search-input">
+                <button class="clear-btn" id="clearBtn"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+        </div>
+
+        <div class="nav-right">
+            <a href="#" class="nav-item">
+                <div class="icon-box"><i class="fa-solid fa-bookmark"></i></div>
+                <span>Favorite</span>
+            </a>
+            <a href="#" class="nav-item">
+                <div class="icon-box"><i class="fa-solid fa-clock-rotate-left"></i></div>
+                <span>Read later</span>
+            </a>
+            <div class="nav-item">
+                <div class="icon-box">
+                    <div class="user-profile-img">
+                        <% if (user && user.profileImage) { %>
+                            <img src="<%= user.profileImage %>" alt="Profile">
+                            <% } else { %>
+                                <i class="fa-solid fa-user" style="font-size: 20px;"></i>
+                                <% } %>
+                    </div>
+                </div>
+                <span>
+                    <%= user ? user.firstName : 'Guest' %>
+                </span>
+            </div>
+        </div>
+    </nav>
+
+    <script>
+        const searchInput = document.getElementById('searchInput');
+        const clearBtn = document.getElementById('clearBtn');
+        clearBtn.addEventListener('click', () => {
+            searchInput.value = '';
+            searchInput.focus();
+        });
+    </script>
+
+</body>
+
+</html>
