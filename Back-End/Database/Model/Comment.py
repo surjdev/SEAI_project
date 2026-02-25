@@ -1,4 +1,4 @@
-from database import Base
+from Database.database import Base
 from sqlalchemy import Column, Integer, String, ForeignKey, Text, DateTime
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
@@ -13,7 +13,7 @@ class Comment(Base):
     created_at = Column(DateTime, server_default=func.now())
 
     # Relationships
-    user = relationship("User")
+    user = relationship("User", back_populates="comments")
     book = relationship("Book", back_populates="comments")
 
 

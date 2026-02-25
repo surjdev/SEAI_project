@@ -1,12 +1,8 @@
-# Controllers/user_controller.py
-from database import SessionLocal
-from models.User import User, UserBookStatus
-
-from database import SessionLocal
-from models.User import User ,Rating
-from models.Comment import Comment
-
+from Database.database import SessionLocal
+from Database.Model.User import User, UserBookStatus, Rating
+from Database.Model.Comment import Comment
 from sqlalchemy.orm import joinedload
+
 
 def get_all_user():
     db = SessionLocal()
@@ -16,7 +12,6 @@ def get_all_user():
                 joinedload(User.ratings).joinedload(Rating.book),
                 joinedload(User.book_statuses).joinedload(UserBookStatus.book),
                 joinedload(User.comments).joinedload(Comment.book)
-
             )\
             .limit(100)\
             .all()
@@ -66,5 +61,3 @@ def get_all_user():
 
     finally:
         db.close()
-
-

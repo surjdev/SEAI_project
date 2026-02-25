@@ -1,11 +1,9 @@
 from sqlalchemy import func
-from database import SessionLocal
-from models.Book import Book
-from models.User import UserBookStatus, Rating
-from models.Comment import Comment 
+from Database.database import SessionLocal
+from Database.Model.Book import Book
+from Database.Model.User import UserBookStatus, Rating
+from Database.Model.Comment import Comment
 from sqlalchemy.orm import selectinload
-
-
 
 
 def get_books_formatted():
@@ -80,5 +78,3 @@ def get_books_formatted():
 
     finally:
         db.close()
-
-

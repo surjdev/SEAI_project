@@ -2,19 +2,12 @@ import os
 from dotenv import load_dotenv
 from flask import Flask, render_template, jsonify , request
 from flask_login import LoginManager, UserMixin, login_required, current_user
-from auth import auth_bp, oauth
 
-# database
-from database import SessionLocal
 from flask_cors import CORS
 
-# models
-from models.Book import Book
-from models.User import User  # อันนี้คือ User ที่เป็น Model จากฐานข้อมูล
-
 # Controllers
-from Controllers.user_controller import get_all_user
-from Controllers.book_controller import get_books_formatted
+from Database.Controller.user_controller import get_all_user
+from Database.Controller.book_controller import get_books_formatted
 
 
 load_dotenv()
