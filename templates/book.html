@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>คลังหนังสือ</title>
+</head>
+<body>
+    <h1>คลังหนังสือทั้งหมด</h1>
+    <p id="status">กำลังโหลด...</p>
+
+    <table id="book-table" border="1" style="display:none; border-collapse: collapse;">
+        <thead>
+            <tr style="background-color: #eee;">
+                <th>ปก</th>
+                <th>ID</th>
+                <th>ชื่อหนังสือ</th>
+                <th>ผู้เขียน</th>
+                <th>สำนักพิมพ์</th>
+                <th>ปีที่พิมพ์</th>
+                <th>เรตติ้ง</th>
+                <th>Favorite</th>
+                <th>Wishlist</th>
+                <th>Comments</th>
+            </tr>
+        </thead>
+        <tbody id="book-body"></tbody>
+    </table>
+
+    <script>
+        async function fetchBooks() {
+            try {
+                const response = await fetch('http://localhost:5000/api/books');
+                const data = await response.json();
+                const tbody = document.getElementById('book-body');
+
+                data.forEach(b => {
+                    const row = document.createElement('tr');
+                    
+                    row.innerHTML = `
+                        <td><img src="${b.image_url}" width="150"></td>
+                        <td>${b.book_id}</td>
+                        <td><b>${b.title}</b></td>
+                        <td>${b.author_name}</td>
+                        <td>${b.publisher_name}</td>
+                        <td>${b.published_year}</td>
+                        <td align="center">${b.avg_rating.toFixed(1)}</td>
+                        <td align="center">${b.favorite_count}</td>
+                        <td align="center">${b.wishlist_count}</td>
+                        <td>
+                            ${b.comments.length > 0
+                                ? b.comments.map(c =>
+                                    `<div>${c.user_id}: ${c.comment}</div>`
+                                ).join('')
+                                : ''
+                            }
+                        </td>
+
+
+                    `;
+                    tbody.appendChild(row);
+                });
+
+                document.getElementById('status').style.display = 'none';
+                document.getElementById('book-table').style.display = 'table';
+
+            } catch (error) {
+                document.getElementById('status').innerText = 'Error: ' + error;
+            }
+        }
+        fetchBooks();
+    </script>
+</body>
+</html>
