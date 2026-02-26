@@ -198,12 +198,14 @@
         width: 200px;
         min-width: 200px;
         height: 290px;
-        background: #2c313c;
+        background: linear-gradient(145deg, #23273a, #1a1d2e);
         border-radius: 10px;
         display: flex;
+        flex-direction: column;
         align-items: center;
         justify-content: center;
         flex-shrink: 0;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
       }
 
       .book-info h1 {
@@ -510,7 +512,10 @@
       <!-- Left: cover + book info -->
       <div class="left-col">
         <div class="book-cover">
-          <i class="fa-solid fa-book" style="font-size: 70px; color: #444"></i>
+          <i
+            class="fa-solid fa-book-open"
+            style="font-size: 62px; color: #3a4060; margin-bottom: 8px"
+          ></i>
         </div>
 
         <div class="book-info">

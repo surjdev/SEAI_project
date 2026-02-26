@@ -18,9 +18,10 @@ books = [
     {"id": 1, "title": "Python 101", "author": "John Doe", "avg_rating": 4.5, "num_ratings": 1004},
     {"id": 2, "title": "Flask Web Development", "author": "Jane Smith", "avg_rating": 4.2, "num_ratings": 80},
     {"id": 3, "title": "Data Science Basics", "author": "Alex Lee", "avg_rating": 4.8, "num_ratings": 120},
-    {"id": 4, "title": "What is love?", "author": "Kasidit Boonsaner", "avg_rating": 4.8, "num_ratings": 65825},
+    {"id": 4, "title": "หนังสือสอนคนดําว่ายนํ้า", "author": "Kasidit Boonsaner", "avg_rating": 4.8, "num_ratings": 65825},
     {"id": 5, "title": "Gris", "author": "Mabel", "avg_rating": 4.2, "num_ratings": 25},
     {"id": 6, "title": "VALORANT", "author": "Pimma", "avg_rating": 4.15, "num_ratings": 150000},
+    {"id": 7, "title": "แม่คุณตัวใหญ่", "author": "Sunny", "avg_rating": 4.15, "num_ratings": 150000},
     
 ]
 # avg_rating = SUM(all ratings for that book) / COUNT(ratings)

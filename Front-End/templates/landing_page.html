@@ -27,13 +27,16 @@
         position: relative;
       }
 
-      /* ── Star canvas ── */
+      /* ── Star canvas (behind everything, but receives mouse events) ── */
       #starCanvas {
         position: fixed;
         inset: 0;
-        pointer-events: none;
+        pointer-events: none; /* stars interact via JS mousemove, not DOM events */
         z-index: 0;
       }
+
+      /* ── Custom cursor dot ── */
+    
 
       /* ── Centre container ── */
       .landing-container {
@@ -45,6 +48,8 @@
         justify-content: center;
         gap: 52px;
         animation: fadeInUp 0.9s ease both;
+        /* will-change for smoother parallax */
+        will-change: transform;
       }
 
       @keyframes fadeInUp {
@@ -64,6 +69,7 @@
         display: flex;
         align-items: center;
         justify-content: center;
+        will-change: transform;
       }
 
       /* Aura blob behind the logo */
@@ -96,7 +102,7 @@
         40% {
           opacity: 0.35;
           transform: scale(0.98);
-        } /* blink dip */
+        }
         55% {
           opacity: 0.95;
           transform: scale(1.04);
@@ -104,7 +110,7 @@
         75% {
           opacity: 0.3;
           transform: scale(0.97);
-        } /* blink dip */
+        }
         100% {
           opacity: 0.85;
           transform: scale(1);
@@ -118,6 +124,7 @@
         width: auto;
         display: block;
         filter: drop-shadow(0 0 28px rgba(73, 244, 223, 0.35));
+        will-change: transform;
       }
 
       /* ── Next button ── */
@@ -129,7 +136,7 @@
         font-size: 18px;
         font-weight: 700;
         border-radius: 12px;
-        cursor: pointer;
+        cursor: none;
         letter-spacing: 0.4px;
         text-decoration: none;
         display: inline-flex;
@@ -140,11 +147,12 @@
           box-shadow 0.2s ease,
           background 0.2s ease;
         box-shadow: 0 4px 28px rgba(73, 244, 223, 0.28);
+        will-change: transform;
       }
 
       .btn:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 8px 36px rgba(73, 244, 223, 0.45);
+        transform: translateY(-3px) scale(1.04);
+        box-shadow: 0 8px 36px rgba(73, 244, 223, 0.55);
         background: #6af7e8;
       }
 
@@ -185,12 +193,16 @@
     <!-- Falling-star canvas -->
     <canvas id="starCanvas"></canvas>
 
-    <div class="landing-container">
-      <div class="logo-wrapper">
+    <!-- Custom cursor dot -->
+    <div id="cursorDot"></div>
+
+    <div class="landing-container" id="parallaxContainer">
+      <div class="logo-wrapper" id="logoWrapper">
         <img
           src="{{ url_for('static', filename='ANYAO.png') }}"
           alt="ANYAO"
           class="logo-img"
+          id="logoImg"
         />
       </div>
 
@@ -201,7 +213,9 @@
     </div>
 
     <script>
-      /* ── Falling-star animation ── */
+      /* ═══════════════════════════════════════════════
+         1.  STAR CANVAS  (falling + mouse repulsion)
+         ═══════════════════════════════════════════════ */
       const canvas = document.getElementById("starCanvas");
       const ctx = canvas.getContext("2d");
 
@@ -212,24 +226,31 @@
       resize();
       window.addEventListener("resize", resize);
 
-      const STAR_COUNT = 120;
+      const STAR_COUNT = 140;
       const stars = [];
+
+      // Track mouse globally
+      let mouse = { x: -9999, y: -9999 };
+      window.addEventListener("mousemove", (e) => {
+        mouse.x = e.clientX;
+        mouse.y = e.clientY;
+      });
 
       function randomStar() {
         return {
           x: Math.random() * canvas.width,
-          y: Math.random() * canvas.height - canvas.height, // start above viewport
-          len: Math.random() * 18 + 6, // tail length
-          speed: Math.random() * 2.5 + 1, // fall speed
+          y: Math.random() * canvas.height - canvas.height,
+          len: Math.random() * 18 + 6,
+          speed: Math.random() * 2.5 + 1,
           opacity: Math.random() * 0.6 + 0.3,
-          size: Math.random() * 1.5 + 0.5, // head dot size
-          angle: Math.PI / 2 + (Math.random() - 0.5) * 0.3, // mostly downward, slight drift
+          size: Math.random() * 1.5 + 0.5,
+          angle: Math.PI / 2 + (Math.random() - 0.5) * 0.3,
         };
       }
 
       for (let i = 0; i < STAR_COUNT; i++) {
         const s = randomStar();
-        s.y = Math.random() * canvas.height; // scatter initial positions
+        s.y = Math.random() * canvas.height;
         stars.push(s);
       }
 
@@ -237,7 +258,6 @@
         const dx = Math.cos(s.angle);
         const dy = Math.sin(s.angle);
 
-        // Tail gradient
         const grd = ctx.createLinearGradient(
           s.x,
           s.y,
@@ -254,18 +274,16 @@
         ctx.lineWidth = s.size;
         ctx.stroke();
 
-        // Bright head dot
         ctx.beginPath();
         ctx.arc(s.x, s.y, s.size * 0.9, 0, Math.PI * 2);
         ctx.fillStyle = `rgba(255, 245, 180, ${s.opacity})`;
         ctx.fill();
       }
 
-      function update(s) {
+      function updateStar(s) {
         s.x += Math.cos(s.angle) * s.speed;
         s.y += Math.sin(s.angle) * s.speed;
 
-        // Reset when off-screen
         if (
           s.y > canvas.height + s.len ||
           s.x < -s.len ||
@@ -275,23 +293,117 @@
         }
       }
 
+      /* ═══════════════════════════════════════════════
+         2.  CURSOR TRAIL  (glowing teal particles)
+         ═══════════════════════════════════════════════ */
+      const cursorDot = document.getElementById("cursorDot");
+
+      const TRAIL_MAX = 28;
+      const trail = []; // { x, y, life, maxLife }
+
+      function spawnTrailParticle(x, y) {
+        trail.push({
+          x,
+          y,
+          life: 1.0,
+          maxLife: 1.0,
+          r: Math.random() * 3 + 1.5,
+        });
+        if (trail.length > TRAIL_MAX) trail.shift();
+      }
+
+      window.addEventListener("mousemove", (e) => {
+        cursorDot.style.left = e.clientX + "px";
+        cursorDot.style.top = e.clientY + "px";
+        spawnTrailParticle(e.clientX, e.clientY);
+      });
+
+      function drawTrail() {
+        for (let i = trail.length - 1; i >= 0; i--) {
+          const p = trail[i];
+          p.life -= 0.045;
+          if (p.life <= 0) {
+            trail.splice(i, 1);
+            continue;
+          }
+
+          const alpha = p.life;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.r * p.life, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(73, 244, 223, ${alpha * 0.75})`;
+          ctx.shadowColor = "#49f4df";
+          ctx.shadowBlur = 8;
+          ctx.fill();
+          ctx.shadowBlur = 0;
+        }
+      }
+
+      /* ═══════════════════════════════════════════════
+         3.  MAIN ANIMATION LOOP
+         ═══════════════════════════════════════════════ */
       function loop() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // Draw trail first (below stars)
+        drawTrail();
+
+        // Draw stars
         stars.forEach((s) => {
-          update(s);
+          updateStar(s);
           drawStar(s);
         });
+
         requestAnimationFrame(loop);
       }
       loop();
 
-      /* ── Fade-out transition on Next click ── */
+      /* ═══════════════════════════════════════════════
+         4.  PARALLAX  (logo + button follow mouse)
+         ═══════════════════════════════════════════════ */
+      const logoWrapper = document.getElementById("logoWrapper");
+      const nextBtn = document.getElementById("nextBtn");
+
+      // Parallax layers: higher multiplier = more motion
+      const LOGO_DEPTH = 18; // px max shift
+      const BTN_DEPTH = 10;
+
+      let parallaxX = 0,
+        parallaxY = 0;
+      let targetPX = 0,
+        targetPY = 0;
+
+      window.addEventListener("mousemove", (e) => {
+        // Normalise to [-1, 1] from screen centre
+        const nx = (e.clientX / window.innerWidth - 0.5) * 2;
+        const ny = (e.clientY / window.innerHeight - 0.5) * 2;
+        targetPX = nx;
+        targetPY = ny;
+      });
+
+      function parallaxLoop() {
+        // Smooth lerp toward target
+        parallaxX += (targetPX - parallaxX) * 0.065;
+        parallaxY += (targetPY - parallaxY) * 0.065;
+
+        // Logo moves opposite to cursor (classic depth illusion)
+        logoWrapper.style.transform = `translate(${-parallaxX * LOGO_DEPTH}px, ${-parallaxY * LOGO_DEPTH}px)`;
+
+        // Button moves slightly less, same direction as logo
+        nextBtn.style.transform = `translate(${-parallaxX * BTN_DEPTH}px, ${-parallaxY * BTN_DEPTH}px)`;
+
+        requestAnimationFrame(parallaxLoop);
+      }
+      parallaxLoop();
+
+      /* ═══════════════════════════════════════════════
+         5.  FADE-OUT TRANSITION ON NEXT CLICK
+         ═══════════════════════════════════════════════ */
       document.getElementById("nextBtn").addEventListener("click", function () {
         const overlay = document.getElementById("fadeOverlay");
         overlay.classList.add("active");
         setTimeout(function () {
           window.location.href = "/home";
-        }, 620); // slightly longer than the CSS transition
+        }, 620);
       });
     </script>
   </body>
