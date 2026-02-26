@@ -1,0 +1,755 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ANYAO - Detail Book: {{ book.title }}</title>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+    />
+    <style>
+      /* ── CSS Variables ─────────────────────────────────── */
+      :root {
+        --bg-dark: #0b0e14;
+        --search-bg: #ffffff;
+        --user-blue: #4a90e2;
+        --highlight: #f1e05a;
+      }
+
+      body {
+        margin: 0;
+        padding: 0;
+        font-family: "Segoe UI", sans-serif;
+        background-color: #1a1d23;
+        color: white;
+      }
+
+      /* ── Navbar ────────────────────────────────────────── */
+      .navbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background-color: var(--bg-dark);
+        padding: 0 45px;
+        height: 90px;
+        color: white;
+        position: sticky;
+        top: 0;
+        z-index: 1000;
+      }
+
+      .nav-left {
+        flex: 1;
+      }
+
+      .logo-img {
+        height: 72px;
+        cursor: pointer;
+      }
+
+      /* Search Section */
+      .nav-center {
+        flex: 2;
+        display: flex;
+        justify-content: center;
+      }
+
+      .search-container {
+        position: relative;
+        width: 100%;
+        max-width: 550px;
+        display: flex;
+        align-items: center;
+      }
+
+      .search-input {
+        width: 100%;
+        height: 44px;
+        padding: 0 45px;
+        border-radius: 12px;
+        border: none;
+        outline: none;
+        font-size: 16px;
+      }
+
+      .search-icon {
+        position: absolute;
+        left: 15px;
+        color: #777;
+      }
+
+      .clear-btn {
+        position: absolute;
+        right: 15px;
+        background: none;
+        border: none;
+        color: #777;
+        cursor: pointer;
+        font-size: 18px;
+        display: flex;
+        align-items: center;
+      }
+
+      .suggestions-dropdown {
+        position: absolute;
+        top: 50px;
+        left: 0;
+        width: 100%;
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+        z-index: 2000;
+        display: none;
+        max-height: 350px;
+        overflow-y: auto;
+      }
+
+      .suggestion-item {
+        padding: 12px 20px;
+        color: #333;
+        cursor: pointer;
+        border-bottom: 1px solid #f0f0f0;
+        font-size: 15px;
+      }
+
+      .suggestion-item:hover {
+        background-color: #f8f9fa;
+      }
+
+      .highlight {
+        background-color: var(--highlight);
+        font-weight: bold;
+        padding: 0 2px;
+        border-radius: 2px;
+      }
+
+      .nav-right {
+        flex: 1;
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+        gap: 20px;
+      }
+
+      .nav-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-decoration: none;
+        color: white;
+        min-width: 85px;
+      }
+
+      .icon-box {
+        height: 38px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 5px;
+      }
+
+      .nav-item i {
+        font-size: 24px;
+      }
+
+      .nav-item span {
+        font-size: 12px;
+        font-weight: 500;
+        white-space: nowrap;
+      }
+
+      .user-profile-img {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        object-fit: cover;
+        background-color: var(--user-blue);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        overflow: hidden;
+        border: 2px solid transparent;
+        transition: border 0.3s;
+      }
+
+      .nav-item:hover .user-profile-img {
+        border: 2px solid #4ee2c0;
+      }
+
+      /* ── Book Detail ────────────────────────────────────── */
+      .page-wrapper {
+        max-width: 1300px;
+        margin: 40px auto;
+        padding: 0 30px;
+        display: flex;
+        gap: 30px;
+        align-items: flex-start;
+      }
+
+      /* Left column: cover + info */
+      .left-col {
+        flex: 1 1 480px;
+        display: flex;
+        gap: 30px;
+      }
+
+      .book-cover {
+        width: 200px;
+        min-width: 200px;
+        height: 290px;
+        background: #2c313c;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+
+      .book-info h1 {
+        margin-top: 0;
+        font-size: 2rem;
+      }
+      .author {
+        color: #4a90e2;
+        font-size: 1.05rem;
+        margin-bottom: 10px;
+      }
+
+      /* Rating Stars */
+      .rating-container {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin: 12px 0;
+        flex-wrap: wrap;
+      }
+      .stars {
+        cursor: pointer;
+        display: flex;
+        gap: 4px;
+      }
+      .fa-star {
+        color: #444;
+        font-size: 20px;
+        transition:
+          color 0.15s,
+          transform 0.15s;
+      }
+      .fa-star:hover {
+        transform: scale(1.2);
+      }
+      .fa-star.active {
+        color: #f1e05a;
+      }
+      .rating-text {
+        color: #ccc;
+        font-size: 0.9rem;
+      }
+
+      .details-section {
+        margin-top: 25px;
+        border-top: 1px solid #333;
+        padding-top: 18px;
+      }
+
+      /* Bottom Buttons */
+      .action-buttons {
+        display: flex;
+        gap: 12px;
+        margin-top: 30px;
+        flex-wrap: wrap;
+      }
+      .btn {
+        padding: 11px 22px;
+        border-radius: 8px;
+        border: none;
+        cursor: pointer;
+        font-weight: bold;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        transition: 0.3s;
+        font-size: 0.95rem;
+      }
+      .btn-later {
+        background: #333;
+        color: white;
+      }
+      .btn-fav {
+        background: #49f4df;
+        color: #0b2e2a;
+      }
+      .btn:hover {
+        opacity: 0.8;
+        transform: translateY(-2px);
+      }
+
+      /* ── Review Panel (right column) ──────────────────────── */
+      .review-panel {
+        flex: 0 0 360px;
+        background: #2a2d4a;
+        border-radius: 14px;
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        max-height: 80vh;
+        overflow: hidden;
+      }
+
+      .review-title {
+        font-size: 0.85rem;
+        font-weight: 800;
+        letter-spacing: 2px;
+        color: #fff;
+        border: 2px solid #5c5fff;
+        display: inline-block;
+        padding: 3px 10px;
+        border-radius: 4px;
+        margin-bottom: 4px;
+      }
+
+      /* Comment input row ("You") */
+      .my-review {
+        display: flex;
+        gap: 12px;
+        align-items: flex-start;
+      }
+      .avatar {
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        background: #4a90e2;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        font-size: 18px;
+        overflow: hidden;
+      }
+      .avatar img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+      .my-review-body {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+      .my-review-header {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .my-username {
+        font-weight: 700;
+        font-size: 0.95rem;
+      }
+      .mini-stars {
+        display: flex;
+        gap: 3px;
+        cursor: pointer;
+      }
+      .mini-stars i {
+        font-size: 15px;
+        color: #444;
+        transition:
+          color 0.15s,
+          transform 0.15s;
+      }
+      .mini-stars i:hover {
+        transform: scale(1.2);
+      }
+      .mini-stars i.active {
+        color: #f1e05a;
+      }
+
+      .comment-input {
+        width: 100%;
+        background: #fff;
+        border: none;
+        border-radius: 20px;
+        padding: 10px 16px;
+        font-size: 0.9rem;
+        color: #333;
+        resize: none;
+        outline: none;
+        box-sizing: border-box;
+        min-height: 42px;
+        max-height: 90px;
+        font-family: inherit;
+      }
+      .submit-btn {
+        align-self: flex-end;
+        background: #5c5fff;
+        color: white;
+        border: none;
+        border-radius: 20px;
+        padding: 6px 18px;
+        cursor: pointer;
+        font-size: 0.85rem;
+        font-weight: 600;
+        transition: 0.2s;
+      }
+      .submit-btn:hover {
+        background: #4040cc;
+      }
+
+      /* Comment list */
+      .comments-list {
+        flex: 1;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+        padding-right: 4px;
+      }
+      .comments-list::-webkit-scrollbar {
+        width: 5px;
+      }
+      .comments-list::-webkit-scrollbar-thumb {
+        background: #5c5fff55;
+        border-radius: 4px;
+      }
+
+      .comment-item {
+        display: flex;
+        gap: 12px;
+        align-items: flex-start;
+      }
+      .comment-body {
+        flex: 1;
+      }
+      .comment-header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 5px;
+      }
+      .comment-username {
+        font-weight: 700;
+        font-size: 0.9rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+      .comment-stars i {
+        font-size: 13px;
+        color: #f1e05a;
+      }
+      .comment-text {
+        background: white;
+        color: #333;
+        border-radius: 16px;
+        padding: 9px 14px;
+        font-size: 0.88rem;
+        line-height: 1.4;
+      }
+    </style>
+  </head>
+
+  <body>
+    <!-- ── Navbar ──────────────────────────────────────────── -->
+    <nav class="navbar">
+      <div class="nav-left">
+        <img
+          src="{{ url_for('static', filename='ANYAO.png') }}"
+          alt="ANYAO"
+          class="logo-img"
+          onclick="window.location.href = '/home'"
+        />
+      </div>
+
+      <div class="nav-center">
+        <div class="search-container">
+          <i class="fa-solid fa-magnifying-glass search-icon"></i>
+          <input
+            type="text"
+            id="searchInput"
+            placeholder="Search book title..."
+            class="search-input"
+            autocomplete="off"
+          />
+          <button class="clear-btn" id="clearBtn">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+          <div id="suggestionsBox" class="suggestions-dropdown"></div>
+        </div>
+      </div>
+
+      <div class="nav-right">
+        <a href="#" class="nav-item">
+          <div class="icon-box"><i class="fa-solid fa-bookmark"></i></div>
+          <span>Favorite</span>
+        </a>
+        <a href="#" class="nav-item">
+          <div class="icon-box">
+            <i class="fa-solid fa-clock-rotate-left"></i>
+          </div>
+          <span>Read later</span>
+        </a>
+        <div class="nav-item">
+          <div class="icon-box">
+            <div class="user-profile-img">
+              {% if user and user.profileImage %}
+              <img src="{{ user.profileImage }}" alt="Profile" />
+              {% else %}
+              <i class="fa-solid fa-user" style="font-size: 20px"></i>
+              {% endif %}
+            </div>
+          </div>
+          <span>{{ user.firstName if user else 'Guest' }}</span>
+        </div>
+      </div>
+    </nav>
+
+    <!-- ── Main page layout ────────────────────────────────── -->
+    <div class="page-wrapper">
+      <!-- Left: cover + book info -->
+      <div class="left-col">
+        <div class="book-cover">
+          <i class="fa-solid fa-book" style="font-size: 70px; color: #444"></i>
+        </div>
+
+        <div class="book-info">
+          <h1>{{ book.title }}</h1>
+          <div class="author">เขียนโดย : {{ book.author }}</div>
+
+          <div class="rating-container">
+            <span class="rating-text"
+              >Avg: <strong id="avgRating">{{ book.avg_rating }}</strong></span
+            >
+            <span class="rating-text"
+              >(<span id="numRating">{{ "{:,}".format(book.num_rating) }}</span>
+              ratings)</span
+            >
+          </div>
+
+          <div class="details-section">
+            <h3>รายละเอียดหนังสือ</h3>
+            <p>{{ book.description }}</p>
+          </div>
+
+          <div class="action-buttons">
+            <button class="btn btn-later">
+              <i class="fa-solid fa-clock-rotate-left"></i> อ่านภายหลัง
+            </button>
+            <button class="btn btn-fav">
+              <i class="fa-solid fa-bookmark"></i> รายการโปรด
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: review panel -->
+      <div class="review-panel">
+        <div class="review-title">REVIEW</div>
+
+        <!-- My comment input -->
+        <div class="my-review">
+          <div class="avatar">
+            {% if user and user.profileImage %}
+            <img src="{{ user.profileImage }}" alt="Profile" />
+            {% else %}
+            <i class="fa-solid fa-user"></i>
+            {% endif %}
+          </div>
+          <div class="my-review-body">
+            <div class="my-review-header">
+              <!-- ของจริงต้องให้ Login (auth) ก่อนเท่านั้นถึงจะสามารถ Review ได้ -->
+              <span class="my-username"
+                >{{ user.firstName if user else 'Guest' }}</span
+              >
+              <div class="mini-stars" id="myStars">
+                <i class="fa-solid fa-star" data-value="1"></i>
+                <i class="fa-solid fa-star" data-value="2"></i>
+                <i class="fa-solid fa-star" data-value="3"></i>
+                <i class="fa-solid fa-star" data-value="4"></i>
+                <i class="fa-solid fa-star" data-value="5"></i>
+              </div>
+            </div>
+            <textarea
+              id="commentInput"
+              class="comment-input"
+              placeholder="comment here..."
+            ></textarea>
+            <button class="submit-btn" id="submitComment">Post</button>
+          </div>
+        </div>
+
+        <!-- Comments list -->
+        <div class="comments-list" id="commentsList">
+          {% for c in comments %}
+          <div class="comment-item">
+            <div class="avatar">
+              {% if c.profileImage %}
+              <img src="{{ c.profileImage }}" alt="{{ c.username }}" />
+              {% else %}
+              <i class="fa-solid fa-user"></i>
+              {% endif %}
+            </div>
+            <div class="comment-body">
+              <div class="comment-header">
+                <span class="comment-username">{{ c.username }}</span>
+                <span class="comment-stars">
+                  {% for n in range(1, 6) %}
+                  <i
+                    class="fa-solid fa-star"
+                    style="color: {{ '#f1e05a' if n <= c.rating else '#444' }}"
+                  ></i>
+                  {% endfor %}
+                </span>
+              </div>
+              <div class="comment-text">{{ c.text }}</div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <script>
+      /* ── Navbar Search ──────────────────────────────────── */
+      const searchInput = document.getElementById("searchInput");
+      const suggestionsBox = document.getElementById("suggestionsBox");
+      const clearBtn = document.getElementById("clearBtn");
+
+      function highlightText(text, query) {
+        if (!query) return text;
+        const regex = new RegExp(`(${query})`, "gi");
+        return text.replace(regex, '<span class="highlight">$1</span>');
+      }
+
+      searchInput.addEventListener("input", async () => {
+        const query = searchInput.value.trim();
+        if (!query) {
+          suggestionsBox.style.display = "none";
+          return;
+        }
+
+        try {
+          const response = await fetch(
+            `/api/search?q=${encodeURIComponent(query)}`,
+          );
+          const books = await response.json();
+          suggestionsBox.innerHTML = "";
+          if (books.length > 0) {
+            books.forEach((book) => {
+              const div = document.createElement("div");
+              div.className = "suggestion-item";
+              div.innerHTML = highlightText(book.title, query);
+              div.onclick = () => {
+                window.location.href = `/book/${book.id}`;
+              };
+              suggestionsBox.appendChild(div);
+            });
+            suggestionsBox.style.display = "block";
+          } else {
+            suggestionsBox.style.display = "none";
+          }
+        } catch (err) {
+          console.log("Search error...");
+        }
+      });
+
+      clearBtn.addEventListener("click", () => {
+        searchInput.value = "";
+        suggestionsBox.style.display = "none";
+        searchInput.focus();
+      });
+
+      document.addEventListener("click", (e) => {
+        if (!e.target.closest(".search-container"))
+          suggestionsBox.style.display = "none";
+      });
+
+      /* ── Shared helper ───────────────────────────────────── */
+      function highlightStars(starSet, count) {
+        starSet.forEach(s => {
+          s.classList.toggle("active", s.dataset.value <= count);
+        });
+      }
+
+      /* Main stars removed — rating is submitted via the review panel only */
+
+      /* ── Review panel mini stars (visual only — sent on Submit) */
+      const myStars = Array.from(document.querySelectorAll("#myStars i"));
+      let myRating = 0;
+
+      myStars.forEach(star => {
+        star.addEventListener("mouseover", () => highlightStars(myStars, star.dataset.value));
+        star.addEventListener("mouseout",  () => highlightStars(myStars, myRating));
+        star.addEventListener("click", () => {
+          myRating = star.dataset.value;
+          highlightStars(myStars, myRating);
+        });
+      });
+
+      /* ── Submit: sends comment + rating together ─────────── */
+      document.getElementById("submitComment").addEventListener("click", async () => {
+        const text = document.getElementById("commentInput").value.trim();
+
+        if (!myRating && !text) {
+          alert("Please select a star rating or write a comment before submitting.");
+          return;
+        }
+
+        try {
+          // 1. Save the comment (with rating)
+          const commentRes = await fetch("/api/comment", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              book_id: {{ book.id }},
+              username: "{{ user.firstName if user else 'Guest' }}",
+              rating: parseInt(myRating) || 0,
+              text: text || ""
+            })
+          });
+
+          // 2. Also update the avg rating if user selected stars
+          if (parseInt(myRating) > 0) {
+            const rateRes = await fetch("/api/rate", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ book_id: {{ book.id }}, rating: parseInt(myRating) })
+            });
+            if (rateRes.ok) {
+              const rateData = await rateRes.json();
+              document.getElementById("avgRating").textContent = rateData.avg_rating;
+              document.getElementById("numRating").textContent = rateData.num_rating.toLocaleString();
+            }
+          }
+
+          if (commentRes.ok) {
+            const c = await commentRes.json();
+            if (c.text) {
+              const list = document.getElementById("commentsList");
+              const starsHtml = [1,2,3,4,5].map(n =>
+                `<i class="fa-solid fa-star" style="font-size:13px;color:${n <= c.rating ? '#f1e05a' : '#444'}"></i>`
+              ).join("");
+              const item = document.createElement("div");
+              item.className = "comment-item";
+              item.innerHTML = `
+                <div class="avatar"><i class="fa-solid fa-user"></i></div>
+                <div class="comment-body">
+                  <div class="comment-header">
+                    <span class="comment-username">${c.username}</span>
+                    <span class="comment-stars">${starsHtml}</span>
+                  </div>
+                  <div class="comment-text">${c.text}</div>
+                </div>`;
+              list.prepend(item);
+            }
+            // Clear inputs
+            document.getElementById("commentInput").value = "";
+            myRating = 0;
+            highlightStars(myStars, 0);
+          }
+        } catch (err) { console.error("Submit error:", err); }
+      });
+    </script>
+  </body>
+</html>
