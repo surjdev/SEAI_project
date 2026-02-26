@@ -29,13 +29,13 @@ books = [
 # Mock comments, keyed by book_id
 comments = {
     1: [
-        {"username": "Nob",        "rating": 4, "text": "ตรงนี้ผมว่าช้างทําดีนะ!", "profileImage": None},
-        {"username": "GOD OF MEME", "rating": 5, "text": "ปืนใหญ่ของเธอน่ะ ใส่เข้ามาในตัวชั้นได้เลย!", "profileImage": None},
+        {"username": "Nob",        "rating": 8,  "text": "ตรงนี้ผมว่าช้างทําดีนะ!", "profileImage": None},
+        {"username": "GOD OF MEME", "rating": 10, "text": "ปืนใหญ่ของเธอน่ะ ใส่เข้ามาในตัวชั้นได้เลย!", "profileImage": None},
     ],
     2: [],
     3: [],
     4: [
-        {"username": "Nob",        "rating": 5, "text": "ยังไม่ได้อ่านครับ ให้ 5 ไปก่อนเห็นว่าช้างเป็นคนแต่ง", "profileImage": None},
+        {"username": "Nob",        "rating": 9,  "text": "ยังไม่ได้อ่านครับ ให้ 9 ไปก่อนเห็นว่าช้างเป็นคนแต่ง", "profileImage": None},
     ],
 }
 
@@ -84,8 +84,8 @@ def rate_book():
     book_id = data.get('book_id')
     new_rating = data.get('rating')
 
-    # Validate input
-    if not book_id or not new_rating or not (1 <= int(new_rating) <= 5):
+    # Validate input — rating scale is now 1-10 (half-stars)
+    if not book_id or not new_rating or not (1 <= int(new_rating) <= 10):
         return jsonify({"error": "Invalid input"}), 400
 
     # Find the book in mock data

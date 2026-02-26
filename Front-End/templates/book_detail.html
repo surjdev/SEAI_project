@@ -350,23 +350,75 @@
         font-weight: 700;
         font-size: 0.95rem;
       }
+      /* ── Half-star rating widget ─────────────────────────── */
       .mini-stars {
         display: flex;
-        gap: 3px;
+        gap: 2px;
         cursor: pointer;
+        user-select: none;
       }
-      .mini-stars i {
+      /* Each visible star is a position:relative wrapper */
+      .mini-stars .star-wrap {
+        position: relative;
+        width: 16px;
+        height: 16px;
+        display: inline-block;
+      }
+      /* Base icon (empty star) */
+      .mini-stars .star-wrap .star-bg {
+        position: absolute;
+        top: 0;
+        left: 0;
         font-size: 15px;
         color: #444;
-        transition:
-          color 0.15s,
-          transform 0.15s;
+        transition: color 0.15s;
       }
-      .mini-stars i:hover {
-        transform: scale(1.2);
+      /* Left half-click zone */
+      .mini-stars .star-wrap .half-left,
+      .mini-stars .star-wrap .half-right {
+        position: absolute;
+        top: 0;
+        height: 100%;
+        width: 50%;
+        z-index: 1;
       }
-      .mini-stars i.active {
+      .mini-stars .star-wrap .half-left {
+        left: 0;
+      }
+      .mini-stars .star-wrap .half-right {
+        right: 0;
+      }
+      /* Filled (active) overlay stars */
+      .mini-stars .star-wrap .star-fill-left,
+      .mini-stars .star-wrap .star-fill-right {
+        position: absolute;
+        top: 0;
+        left: 0;
+        font-size: 15px;
         color: #f1e05a;
+        overflow: hidden;
+        transition: opacity 0.15s;
+        opacity: 0;
+        pointer-events: none;
+      }
+      .mini-stars .star-wrap .star-fill-left {
+        width: 50%;
+      }
+      .mini-stars .star-wrap .star-fill-right {
+        width: 100%;
+      }
+      .mini-stars .star-wrap .star-fill-right {
+        clip-path: none;
+      }
+      /* Hover / active state applied via JS class */
+      .mini-stars .star-wrap.half-lit .star-fill-left {
+        opacity: 1;
+      }
+      .mini-stars .star-wrap.full-lit .star-fill-left {
+        opacity: 1;
+      }
+      .mini-stars .star-wrap.full-lit .star-fill-right {
+        opacity: 1;
       }
 
       .comment-input {
@@ -567,12 +619,17 @@
               <span class="my-username"
                 >{{ user.firstName if user else 'Guest' }}</span
               >
+              <!-- Half-star rating 1-10: each .star-wrap has left=odd, right=even value -->
               <div class="mini-stars" id="myStars">
-                <i class="fa-solid fa-star" data-value="1"></i>
-                <i class="fa-solid fa-star" data-value="2"></i>
-                <i class="fa-solid fa-star" data-value="3"></i>
-                <i class="fa-solid fa-star" data-value="4"></i>
-                <i class="fa-solid fa-star" data-value="5"></i>
+                {% for s in range(1, 6) %}
+                <span class="star-wrap" data-star="{{ s }}">
+                  <i class="fa-regular fa-star star-bg"></i>
+                  <i class="fa-solid fa-star star-fill-left"></i>
+                  <i class="fa-solid fa-star star-fill-right"></i>
+                  <span class="half-left" data-value="{{ s*2 - 1 }}"></span>
+                  <span class="half-right" data-value="{{ s*2 }}"></span>
+                </span>
+                {% endfor %}
               </div>
             </div>
             <textarea
@@ -598,12 +655,59 @@
             <div class="comment-body">
               <div class="comment-header">
                 <span class="comment-username">{{ c.username }}</span>
-                <span class="comment-stars">
-                  {% for n in range(1, 6) %}
-                  <i
-                    class="fa-solid fa-star"
-                    style="color: {{ '#f1e05a' if n <= c.rating else '#444' }}"
-                  ></i>
+                <!-- Half-star display for comment rating (scale 1-10) -->
+                <span
+                  class="comment-stars"
+                  style="display: inline-flex; gap: 2px"
+                >
+                  {% for s in range(1, 6) %} {% set left_val = s * 2 - 1 %} {%
+                  set right_val = s * 2 %}
+                  <span
+                    style="
+                      position: relative;
+                      display: inline-block;
+                      width: 14px;
+                      height: 14px;
+                    "
+                  >
+                    <i
+                      class="fa-regular fa-star"
+                      style="
+                        position: absolute;
+                        top: 0;
+                        left: 0;
+                        font-size: 13px;
+                        color: #444;
+                      "
+                    ></i>
+                    {% if c.rating >= right_val %}
+                    <i
+                      class="fa-solid fa-star"
+                      style="
+                        position: absolute;
+                        top: 0;
+                        left: 0;
+                        font-size: 13px;
+                        color: #f1e05a;
+                        width: 100%;
+                        overflow: hidden;
+                      "
+                    ></i>
+                    {% elif c.rating >= left_val %}
+                    <i
+                      class="fa-solid fa-star"
+                      style="
+                        position: absolute;
+                        top: 0;
+                        left: 0;
+                        font-size: 13px;
+                        color: #f1e05a;
+                        width: 50%;
+                        overflow: hidden;
+                      "
+                    ></i>
+                    {% endif %}
+                  </span>
                   {% endfor %}
                 </span>
               </div>
@@ -670,27 +774,56 @@
           suggestionsBox.style.display = "none";
       });
 
-      /* ── Shared helper ───────────────────────────────────── */
-      function highlightStars(starSet, count) {
-        starSet.forEach(s => {
-          s.classList.toggle("active", s.dataset.value <= count);
+      /* ── Half-star rating widget (1-10 scale) ───────────── */
+      const starWraps = Array.from(document.querySelectorAll("#myStars .star-wrap"));
+      let myRating = 0;
+
+      function applyStarHighlight(ratingValue) {
+        // ratingValue is 0–10 (half steps)
+        starWraps.forEach(wrap => {
+          const s = parseInt(wrap.dataset.star); // 1-5 star index
+          const leftVal  = s * 2 - 1; // e.g. star 1 → 1,3,5,7,9
+          const rightVal = s * 2;     // e.g. star 1 → 2,4,6,8,10
+          wrap.classList.remove("half-lit", "full-lit");
+          if (ratingValue >= rightVal) {
+            wrap.classList.add("full-lit");
+          } else if (ratingValue >= leftVal) {
+            wrap.classList.add("half-lit");
+          }
         });
       }
 
-      /* Main stars removed — rating is submitted via the review panel only */
-
-      /* ── Review panel mini stars (visual only — sent on Submit) */
-      const myStars = Array.from(document.querySelectorAll("#myStars i"));
-      let myRating = 0;
-
-      myStars.forEach(star => {
-        star.addEventListener("mouseover", () => highlightStars(myStars, star.dataset.value));
-        star.addEventListener("mouseout",  () => highlightStars(myStars, myRating));
-        star.addEventListener("click", () => {
-          myRating = star.dataset.value;
-          highlightStars(myStars, myRating);
+      // Wire up hover + click on each half-zone
+      document.querySelectorAll("#myStars .half-left, #myStars .half-right").forEach(half => {
+        const val = parseInt(half.dataset.value);
+        half.addEventListener("mouseover", () => applyStarHighlight(val));
+        half.addEventListener("mouseout",  () => applyStarHighlight(myRating));
+        half.addEventListener("click", () => {
+          myRating = val;
+          applyStarHighlight(myRating);
         });
+        // style for clickability
+        half.style.cursor = "pointer";
       });
+
+      /* Helper: build half-star HTML for a given rating (1-10) */
+      function buildHalfStarHtml(ratingVal) {
+        let html = '<span style="display:inline-flex;gap:2px;">';
+        for (let s = 1; s <= 5; s++) {
+          const leftVal  = s * 2 - 1;
+          const rightVal = s * 2;
+          html += '<span style="position:relative;display:inline-block;width:14px;height:14px;">';
+          html += '<i class="fa-regular fa-star" style="position:absolute;top:0;left:0;font-size:13px;color:#444;"></i>';
+          if (ratingVal >= rightVal) {
+            html += '<i class="fa-solid fa-star" style="position:absolute;top:0;left:0;font-size:13px;color:#f1e05a;"></i>';
+          } else if (ratingVal >= leftVal) {
+            html += '<i class="fa-solid fa-star" style="position:absolute;top:0;left:0;font-size:13px;color:#f1e05a;width:50%;overflow:hidden;"></i>';
+          }
+          html += '</span>';
+        }
+        html += '</span>';
+        return html;
+      }
 
       /* ── Submit: sends comment + rating together ─────────── */
       document.getElementById("submitComment").addEventListener("click", async () => {
@@ -702,7 +835,7 @@
         }
 
         try {
-          // 1. Save the comment (with rating)
+          // 1. Save the comment (with rating on 1-10 scale)
           const commentRes = await fetch("/api/comment", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -732,9 +865,7 @@
             const c = await commentRes.json();
             if (c.text) {
               const list = document.getElementById("commentsList");
-              const starsHtml = [1,2,3,4,5].map(n =>
-                `<i class="fa-solid fa-star" style="font-size:13px;color:${n <= c.rating ? '#f1e05a' : '#444'}"></i>`
-              ).join("");
+              const starsHtml = buildHalfStarHtml(c.rating);
               const item = document.createElement("div");
               item.className = "comment-item";
               item.innerHTML = `
@@ -751,7 +882,7 @@
             // Clear inputs
             document.getElementById("commentInput").value = "";
             myRating = 0;
-            highlightStars(myStars, 0);
+            applyStarHighlight(0);
           }
         } catch (err) { console.error("Submit error:", err); }
       });
