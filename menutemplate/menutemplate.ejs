@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ANYAO - Book Recommendation</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+
+<body>
+
+    <nav class="navbar">
+        <div class="nav-left">
+            <a href="/">
+                <img src="/ANYAO.png" alt="ANYAO" class="logo-img">
+            </a>
+        </div>
+
+        <div class="nav-center">
+            <div class="search-wrapper">
+                <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                <input type="text" id="searchInput" placeholder="Search for books..." class="search-input">
+                <button type="button" class="clear-btn" id="clearBtn">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+        </div>
+
+        <div class="nav-right">
+            <a href="/favorites" class="nav-item">
+                <div class="icon-box">
+                    <i class="fa-solid fa-bookmark"></i>
+                </div>
+                <span>Favorite</span>
+            </a>
+
+            <a href="/read-later" class="nav-item">
+                <div class="icon-box">
+                    <i class="fa-solid fa-clock-rotate-left"></i>
+                </div>
+                <span>Read later</span>
+            </a>
+
+            <div class="nav-item user-profile">
+                <div class="icon-box">
+                    <div class="avatar-container">
+                        <% if (user && user.profileImage) { %>
+                            <img src="<%= user.profileImage %>" alt="Profile" class="user-img">
+                            <% } else { %>
+                                <i class="fa-solid fa-user"></i>
+                                <% } %>
+                    </div>
+                </div>
+                <span>
+                    <%= user ? user.firstName : 'Guest' %>
+                </span>
+            </div>
+        </div>
+    </nav>
+
+    <script>
+        const searchInput = document.getElementById('searchInput');
+        const clearBtn = document.getElementById('clearBtn');
+
+        clearBtn.addEventListener('click', () => {
+            searchInput.value = '';
+            searchInput.focus();
+        });
+    </script>
+
+</body>
+
+</html>

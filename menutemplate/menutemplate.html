@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ANYAO</title>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+    />
+    <style>
+      :root {
+        --bg-dark: #0b0e14;
+        --search-bg: #ffffff;
+        --user-blue: #4a90e2;
+        --highlight: #f1e05a;
+      }
+
+      body {
+        margin: 0;
+        padding: 0;
+        font-family: "Segoe UI", sans-serif;
+        background-color: #1a1d23;
+        color: white;
+      }
+
+      .navbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background-color: var(--bg-dark);
+        padding: 0 45px;
+        height: 90px;
+        position: sticky;
+        top: 0;
+        z-index: 1000;
+      }
+
+      .logo-img {
+        height: 72px;
+        cursor: pointer;
+      }
+
+      .nav-center {
+        flex: 2;
+        display: flex;
+        justify-content: center;
+      }
+      .search-container {
+        position: relative;
+        width: 100%;
+        max-width: 550px;
+        display: flex;
+        align-items: center;
+      }
+
+      .search-input {
+        width: 100%;
+        height: 44px;
+        padding: 0 45px;
+        border-radius: 12px;
+        border: none;
+        outline: none;
+        font-size: 16px;
+      }
+
+      .search-icon {
+        position: absolute;
+        left: 15px;
+        color: #777;
+      }
+      .clear-btn {
+        position: absolute;
+        right: 15px;
+        background: none;
+        border: none;
+        color: #777;
+        cursor: pointer;
+        font-size: 18px;
+      }
+
+      .suggestions-dropdown {
+        position: absolute;
+        top: 50px;
+        left: 0;
+        width: 100%;
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+        z-index: 2000;
+        display: none;
+        max-height: 350px;
+        overflow-y: auto;
+      }
+
+      .suggestion-item {
+        padding: 12px 20px;
+        color: #333;
+        cursor: pointer;
+        border-bottom: 1px solid #f0f0f0;
+      }
+      .suggestion-item:hover {
+        background-color: #f8f9fa;
+      }
+      .highlight {
+        background-color: var(--highlight);
+        font-weight: bold;
+        border-radius: 2px;
+      }
+
+      .nav-right {
+        flex: 1;
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+        gap: 20px;
+      }
+      .nav-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-decoration: none;
+        color: white;
+        min-width: 85px;
+      }
+      .icon-box {
+        height: 38px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 5px;
+      }
+      .user-profile-img {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        object-fit: cover;
+        background-color: var(--user-blue);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        overflow: hidden;
+        border: 2px solid transparent;
+      }
+    </style>
+    {% block extra_css %}{% endblock %}
+  </head>
+  <body>
+    <nav class="navbar">
+      <div class="nav-left">
+        <a href="/"
+          ><img src="/static/ANYAO.png" alt="ANYAO" class="logo-img"
+        /></a>
+      </div>
+
+      <div class="nav-center">
+        <div class="search-container">
+          <i class="fa-solid fa-magnifying-glass search-icon"></i>
+          <input
+            type="text"
+            id="searchInput"
+            placeholder="Search..."
+            class="search-input"
+            autocomplete="off"
+          />
+          <button class="clear-btn" id="clearBtn">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+          <div id="suggestionsBox" class="suggestions-dropdown"></div>
+        </div>
+      </div>
+
+      <div class="nav-right">
+        <a href="#" class="nav-item">
+          <div class="icon-box"><i class="fa-solid fa-bookmark"></i></div>
+          <span>Favorite</span>
+        </a>
+        <a href="#" class="nav-item">
+          <div class="icon-box">
+            <i class="fa-solid fa-clock-rotate-left"></i>
+          </div>
+          <span>Read later</span>
+        </a>
+        <div class="nav-item">
+          <div class="icon-box">
+            <div class="user-profile-img">
+              {% if user and user.profileImage %}
+              <img
+                src="{{ user.profileImage }}"
+                alt="Profile"
+                style="width: 100%; height: 100%"
+              />
+              {% else %}
+              <i class="fa-solid fa-user" style="font-size: 20px"></i>
+              {% endif %}
+            </div>
+          </div>
+          <span>{{ user.firstName if user else 'Guest' }}</span>
+        </div>
+      </div>
+    </nav>
+
+    {% block content %}{% endblock %}
+
+    <script>
+      const searchInput = document.getElementById("searchInput");
+      const suggestionsBox = document.getElementById("suggestionsBox");
+      const clearBtn = document.getElementById("clearBtn");
+
+      function highlightText(text, query) {
+        if (!query) return text;
+        const regex = new RegExp(`(${query})`, "gi");
+        return text.replace(regex, '<span class="highlight">$1</span>');
+      }
+
+      searchInput.addEventListener("input", async () => {
+        const query = searchInput.value.trim();
+        if (!query) {
+          suggestionsBox.style.display = "none";
+          return;
+        }
+
+        try {
+          const response = await fetch(
+            `/api/search?q=${encodeURIComponent(query)}`,
+          );
+          const books = await response.json();
+          suggestionsBox.innerHTML = "";
+          if (books.length > 0) {
+            books.forEach((book) => {
+              const div = document.createElement("div");
+              div.className = "suggestion-item";
+              div.innerHTML = highlightText(book.title, query);
+              div.onclick = () => {
+                window.location.href = `/book/${book.id}`;
+              };
+              suggestionsBox.appendChild(div);
+            });
+            suggestionsBox.style.display = "block";
+          } else {
+            suggestionsBox.style.display = "none";
+          }
+        } catch (err) {
+          console.log("Search error...");
+        }
+      });
+
+      clearBtn.addEventListener("click", () => {
+        searchInput.value = "";
+        suggestionsBox.style.display = "none";
+        searchInput.focus();
+      });
+
+      document.addEventListener("click", (e) => {
+        if (!e.target.closest(".search-container"))
+          suggestionsBox.style.display = "none";
+      });
+    </script>
+  </body>
+</html>
