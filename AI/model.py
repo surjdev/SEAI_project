@@ -4,48 +4,94 @@ from pathlib import Path
 
 BUFFER_PATH = Path("AI/raw_buffer.csv")
 
-# from surprise import SVD, Dataset, Reader, accuracy
-# from surprise.model_selection import train_test_split, GridSearchCV
+from surprise import SVD, Dataset, Reader, accuracy
+from surprise.model_selection import train_test_split, GridSearchCV
+import pickle
 
-# class SVD_method():
-#     model_path = Path("model.pkl")
-#     def __init__(self):
-#         self.method = None
-#         self.reader = None
-#         self.data = None
-#         self.trainset = None
-#         self.testset = None
-#         self.predictions = None
-#         self.load_model()
+class SVD_method():
+    buffer_dir = Path("AI/svd_results")
+    buffer_model_path = [
+        buffer_dir / "model.pkl", 
+        buffer_dir / "model_plus.pkl"
+    ]
+    def __init__(self, data:pd.DataFrame):
+        self.buffer_dir.mkdir(parents=True, exist_ok=True)
+        self.data = self.prepare_data(data)
+        self.all_books = self.data["book_id"].unique()
+        self.model = self.load_model(self.data)
+    
+    def train(self, data:pd.DataFrame):
+        def individual_train(data, rating_col):
+            reader = Reader(rating_scale=(1, data[rating_col].max()))
+            data = Dataset.load_from_df(data[['user_id', 'book_id', rating_col]], reader)
+            
+            param_grid = {
+                "n_factors": [50, 100, 150],
+                "lr_all": [0.002, 0.005, 0.01],
+                "reg_all": [0.02, 0.1, 0.4],
+                "n_epochs": [20, 30]
+            }
+            gs = GridSearchCV(SVD, param_grid, measures=['rmse', 'mae'], cv=3, n_jobs=-1)
+            gs.fit(data)
+            print(gs.best_score['rmse'])
+            print(gs.best_params['rmse'])
+            best_model = SVD(**gs.best_params['rmse'])
+            best_model.fit(data.build_full_trainset())
+            return best_model
+        
+        model = {}
+        model["model_plus"] = individual_train(data, "book_rating_plus")
+        data = data.dropna(subset="book_rating")
+        model["model"] = individual_train(data, "book_rating")
+        return model
 
-#     def load_data(self, df):
-#         self.reader = Reader(rating_scale=(1, 5))
-#         self.data = Dataset.load_from_df(df, self.reader)
+    def recommend(self, user_id, n=10):
+        predictions = {} 
+        for model_name, model in self.model.items():
+            rated_books = self.data[self.data['user_id'] == user_id]['book_id'].tolist()
+            books_to_predict = [b for b in self.all_books if b not in rated_books]
+            prediction = [model.predict(user_id, book_id) for book_id in books_to_predict]
+            prediction = sorted(prediction, key=lambda x: x.est, reverse=True)
+            prediction = prediction[:n]
+            prediction = pd.DataFrame(prediction)
+            prediction = prediction[["iid", "est"]]
+            prediction = prediction.rename(columns={"iid": "book_id", "est": "rating"})
+            prediction = prediction.round(decimals=2)
+            predictions[model_name] = prediction
+            
+        return predictions
 
-#     def train(self):
-#         self.trainset, self.testset = train_test_split(self.data, test_size=0.2)
-#         self.model = SVD()
-#         self.model.fit(self.trainset)
+    def save_model(self, model):
+        for path in self.buffer_model_path:
+            with open(path, 'wb') as f:
+                pickle.dump(model[path.name.split(".")[0]], f)
 
-#     def evaluate(self):
-#         self.predictions = self.model.test(self.testset)
-#         accuracy.rmse(self.predictions)
+    def update(self, data:pd.DataFrame):
+        try:
+            self.data = self.prepare_data(data)
+            self.model = self.train(self.data)
+            self.save_model(self.model)
+            return {"update_svd_method":"success"}
+        except Exception as e:
+            return {"update_svd_method":"failed", "error": str(e)}
 
-#     def recommend(self, user_id, n=10):
-#         all_items = self.data.all_items()
-#         user_items = self.trainset.ur[user_id]
-#         items_to_predict = [item for item in all_items if item not in user_items]
-#         predictions = [self.model.predict(user_id, item) for item in items_to_predict]
-#         predictions.sort(key=lambda x: x.est, reverse=True)
-#         return predictions[:n]
-
-#     def save_model(self, path):
-#         with open(path, 'wb') as f:
-#             pickle.dump(self.model, f)
-
-#     def load_model(self):
-#         with open(path, 'rb') as f:
-#             self.model = pickle.load(f)
+    def load_model(self, data:pd.DataFrame):
+        model = {}
+        if all([path.exists() for path in self.buffer_model_path]):
+            for path in self.buffer_model_path:
+                with open(path, 'rb') as f:
+                    model[path.name.split(".")[0]] = pickle.load(f)
+        else:
+            model = self.train(data)
+            self.save_model(model)
+        return model
+            
+    def prepare_data(self, data:pd.DataFrame, user_threshold=3):
+        data.dropna(subset="book_rating_plus", inplace=True)
+        user_counts = data["user_id"].value_counts()
+        users_to_keep = user_counts[user_counts >= user_threshold].index
+        data = data[data["user_id"].isin(users_to_keep)]
+        return data
 
 class Statisical_method():
     buffer_dir = Path("AI/statistical_results")
@@ -129,7 +175,7 @@ class Recommender:
     def __init__(self):
         data = self.load_data()
         self.method = {
-            # "svd": SVD_method(data),
+            "svd": SVD_method(data),
             "statistical": Statisical_method(data)
         }
     
@@ -156,6 +202,7 @@ class Recommender:
             else:
                 return row["book_rating"]
         data["book_rating_plus"] = data.apply(add_fav_score, axis=1)
+        data["book_rating_plus"] = (data["book_rating_plus"]/data["book_rating_plus"].max())*10
         data.dropna(subset="book_rating_plus", inplace=True)
         return data
 
@@ -164,7 +211,7 @@ class Recommender:
             df_recommend = self.method["statistical"].recommend(limit)
         else:
             df_recommend = {}
-            # df_recommend.update(self.method["svd"].recommend(user_id, limit))
+            df_recommend.update(self.method["svd"].recommend(user_id, limit))
             df_recommend.update(self.method["statistical"].recommend(limit))
         return self.transform_data(df_recommend)
     
@@ -176,11 +223,11 @@ class Recommender:
     
 if __name__ == "__main__":
     recommender = Recommender()
-    results = recommender.recommend(None, 10)
-    print(results)
-    # for method in results:
-    #     print(method)
-    #     print(results[method])
-    #     print("+" * 100)
+    results = recommender.recommend(1, 10)
+    # print(results)
+    for method in results:
+        print(method)
+        print(results[method])
+        print("+" * 100)
         # break
     

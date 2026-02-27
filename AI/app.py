@@ -5,27 +5,28 @@ from model import Recommender, BUFFER_PATH
 # import pandas as pd
 # from pathlib import Path
 # import tqdm
-
-def download_buffer():
-    try:
-        flag = False
-        return {"download": "success"}
-    except Exception as e:
-        return {"download": "failed", "error": str(e)}
-
-app = Flask(__name__)
+from time import sleep
 
 INTERNAL_TOKEN = "RECOMMENDER_MODEL_SECRET_KEY"
 BACKEND_URL = ""
 
-# initialize data buffer
-# in case that the buffer is not exist, download it from the backend
-for i in range(10):
-    status = download_buffer()
-    if status["download"] == "success":
-        break
-else:
-    raise FileNotFoundError("Buffer file not found after 10 attempts")
+
+def download_buffer(attempt_count=5, delay=10):
+    for i in range(attempt_count):
+        status = requests.post(
+                BACKEND_URL, 
+                headers = {"Authorization": f"Bearer {INTERNAL_TOKEN}"}
+            ).json()
+        if status["download"] == "success" or BUFFER_PATH.exists():
+            return status
+        sleep(delay)
+    raise FileNotFoundError(f"Buffer file not found after {attempt_count} attempts")
+
+if not BUFFER_PATH.exists():
+    download_buffer()
+
+
+app = Flask(__name__)
 
 # initialize recommender
 recommender = Recommender()
@@ -47,17 +48,16 @@ def require_token(f):
 @app.route("/recommend/api", methods=["POST"])
 @require_token
 def recommend():
-    user_id = request.json.get("user_id")
-    limit = request.json.get("limit", 10)
-    recommend_book = recommender.recommend(user_id, limit)
-    print(recommend_book)
-    return jsonify(recommend_book)
+    user_id = request.form.get("user_id")
+    limit = request.form.get("limit", 10, type=int)
+    recommendations = recommender.recommend(user_id, limit)
+    return jsonify(recommendations)
 
 @app.route("/recommend/update", methods=["POST"])
 @require_token
 def update_model():
-    status = {}
-    status.update(download_buffer())
+    BUFFER_PATH.unlink(missing_ok=True)
+    status = download_buffer()
     status.update(recommender.update())
     return jsonify(status)
 
@@ -100,4 +100,4 @@ def transform_data(data:dict):
     
 
 if __name__ == "__main__":
-    app.run(port=5002, debug=True)
+    app.run(host="0.0.0.0", port=5002, debug=True)
