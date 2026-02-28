@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <title>รายการหนังสือทั้งหมด</title>
+  <style>
+    table { width: 100%; border-collapse: collapse; }
+    table, th, td { border: 1px solid black; }
+    th, td { padding: 8px; text-align: left; vertical-align: top; }
+  </style>
+</head>
+<body>
+
+<h1>รายการหนังสือทั้งหมด</h1>
+
+<table>
+  <thead>
+    <tr>
+      <th>book_id</th>
+      <th>รูปปก</th>
+      <th>ชื่อหนังสือ</th>
+      <th>ผู้แต่ง</th>
+      <th>สำนักพิมพ์</th>
+      <th>ปีที่พิมพ์</th>
+      <th>คะแนนเฉลี่ย</th>
+      <th>คนที่กด Favourite</th>
+      <th>คนที่กด Read Later</th>
+      <th>ความคิดเห็น</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for book in books %}
+    <tr>
+      <td>{{ book.book_id }}</td>
+      <td>
+        {% if book.image_url %}
+          <img src="{{ book.image_url }}" width="50" alt="{{ book.name }}" />
+        {% else %}
+          -
+        {% endif %}
+      </td>
+      <td>{{ book.name }}</td>
+      <td>{{ book.author_name or '-' }}</td>
+      <td>{{ book.publisher_name or '-' }}</td>
+      <td>{{ book.published_year or '-' }}</td>
+      <td>{{ book.avg_rating or '-' }}</td>
+      
+      <td>
+        {% for uid in book.favourite_users %}
+          #{{ uid }}<br>
+        {% else %}
+          -
+        {% endfor %}
+      </td>
+
+      <td>
+        {% for uid in book.readlater_users %}
+          #{{ uid }}<br>
+        {% else %}
+          -
+        {% endfor %}
+      </td>
+
+      <td>
+        {% for c in book.comments %}
+          <strong>#{{ c.user_id }}:</strong> {{ c.text }}<br>
+        {% else %}
+          -
+        {% endfor %}
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+</body>
+</html>
