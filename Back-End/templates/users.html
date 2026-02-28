@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <title>รายการผู้ใช้</title>
+  <style>
+    table { width: 100%; border-collapse: collapse; }
+    table, th, td { border: 1px solid black; }
+    th, td { padding: 8px; text-align: left; vertical-align: top; }
+  </style>
+</head>
+<body>
+
+<h1>รายการผู้ใช้ทั้งหมด</h1>
+
+<table>
+  <thead>
+    <tr>
+      <th>User_id</th>
+      <th>รูป</th>
+      <th>Username</th>
+      <th>Email</th>
+      <th>ปีเกิด</th>
+      <th>ที่อยู่</th>
+      <th>คะแนนที่ให้</th>
+      <th>Favourites</th>
+      <th>Read Later</th>
+      <th>ความคิดเห็น</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for user in users %}
+    <tr>
+      <td>{{ user.user_id }}</td>
+      <td>
+        {% if user.user_image %}
+          <img src="{{ user.user_image }}" width="50" alt="avatar" />
+        {% else %}
+          -
+        {% endif %}
+      </td>
+      <td>{{ user.username or '-' }}</td>
+      <td>{{ user.email or '-' }}</td>
+      <td>{{ user.birth_year or '-' }}</td>
+      <td>{{ user.location or '-' }}</td>
+      <td>
+        {% for r in user.book_rating %}
+          Book #{{ r.book_id }}: {{ r.rating }}<br>
+        {% else %}
+          -
+        {% endfor %}
+      </td>
+      <td>
+        {% for f in user.is_favourite %}
+          Book #{{ f.book_id }}<br>
+        {% else %}
+          -
+        {% endfor %}
+      </td>
+      <td>
+        {% for bid in user.user_readlater %}
+          Book #{{ bid }}<br>
+        {% else %}
+          -
+        {% endfor %}
+      </td>
+      <td>
+        {% for c in user.comments %}
+          Book #{{ c.book_id }}: {{ c.comment }}<br>
+        {% else %}
+          -
+        {% endfor %}
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+</body>
+</html>
