@@ -21,6 +21,8 @@ if login_required:
     user_id = 12
 user_id = None
 
+################################### DEBUG ###################################
+
 @app.route("/books")
 @cache.cached(timeout=300, key_prefix="all_books")
 def books_view():
@@ -38,6 +40,8 @@ def users_view():
 @app.route("/search-test")
 def search_test():
     return render_template("search_test.html")
+
+################################### Route ##################################
 
 @app.route("/book_detail")
 @cache.cached(timeout=300, key_prefix=lambda: f"book_{request.args.get('book_id')}_{user_id}")
