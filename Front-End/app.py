@@ -29,13 +29,13 @@ books = [
 # Mock comments, keyed by book_id
 comments = {
     1: [
-        {"username": "Nob",        "rating": 8,  "text": "ตรงนี้ผมว่าช้างทําดีนะ!", "profileImage": None},
+        {"username": "Nob",         "rating": 8,  "text": "ตรงนี้ผมว่าช้างทําดีนะ!", "profileImage": None},
         {"username": "GOD OF MEME", "rating": 10, "text": "ปืนใหญ่ของเธอน่ะ ใส่เข้ามาในตัวชั้นได้เลย!", "profileImage": None},
     ],
     2: [],
     3: [],
     4: [
-        {"username": "Nob",        "rating": 9,  "text": "ยังไม่ได้อ่านครับ ให้ 9 ไปก่อนเห็นว่าช้างเป็นคนแต่ง", "profileImage": None},
+        {"username": "Nob",         "rating": 9,  "text": "ยังไม่ได้อ่านครับ ให้ 9 ไปก่อนเห็นว่าช้างเป็นคนแต่ง", "profileImage": None},
     ],
 }
 
@@ -64,6 +64,16 @@ def search_book2():
         "profileImage": None       
     }
     return render_template('search_book.html', user=user_data)
+
+@app.route('/profile')
+def profile():
+    user_data = {
+        "email": "kasidit.bo@kkumail.com",
+        "full_name": "Kasidit Boonsaner",
+        "age": 8,
+        "profile_url": None
+    }
+    return render_template('profile.html', user_data=user_data)
 
 @app.route('/api/search')
 def book_query():
