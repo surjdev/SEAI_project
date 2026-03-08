@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Live Book Search</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 40px; background-color: #f9f9f9; }
+        .container { max-width: 600px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        input { width: 100%; padding: 12px; margin-bottom: 20px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; font-size: 16px; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { border-bottom: 1px solid #eee; padding: 12px; text-align: left; }
+        tr:hover { background-color: #fdfdfd; }
+        .loading { color: #888; font-style: italic; display: none; margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Live Book Search</h2>
+    
+    <input type="text" id="searchInput" placeholder="Start typing to search..." autocomplete="off">
+    
+    <div id="loader" class="loading">Searching...</div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Title</th>
+                <th>Author</th>
+            </tr>
+        </thead>
+        <tbody id="tableBody">
+            </tbody>
+    </table>
+</div>
+
+<script>
+    const searchInput = document.getElementById('searchInput');
+    const tableBody = document.getElementById('tableBody');
+    const loader = document.getElementById('loader');
+
+    // 1. The core search function
+    async function performSearch() {
+        const query = searchInput.value;
+        
+        // Show loader if there is a query
+        loader.style.display = query ? 'block' : 'none';
+
+        try {
+            const response = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
+            const books = await response.json();
+
+            tableBody.innerHTML = '';
+
+            if (books.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="2" style="text-align:center;">No matches found</td></tr>';
+            } else {
+                books.forEach(book => {
+                    tableBody.innerHTML += `
+                        <tr>
+                            <td>${book.title}</td>
+                            <td>${book.author}</td>
+                        </tr>
+                    `;
+                });
+            }
+        } catch (error) {
+            console.error('Fetch error:', error);
+        } finally {
+            loader.style.display = 'none';
+        }
+    }
+
+    // 2. Debounce Helper: Prevents firing the API on every single letter
+    // It waits 300ms after you stop typing before running the search
+    function debounce(func, timeout = 300) {
+        let timer;
+        return (...args) => {
+            clearTimeout(timer);
+            timer = setTimeout(() => { func.apply(this, args); }, timeout);
+        };
+    }
+
+    // 3. Attach the debounced function to the input event
+    const processSearch = debounce(() => performSearch());
+    
+    searchInput.addEventListener('input', processSearch);
+
+    // Initial Load (Optional: show all books on startup)
+    performSearch();
+</script>
+
+</body>
+</html>
