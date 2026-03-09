@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ANYAO - Profile & Auth Test</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #0b0e14;
+            --bg-main: #1a1d23;
+            --accent: #49f4df;
+            --profile-green: #4caf50;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-main);
+            color: white;
+        }
+
+        /* Navbar */
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: var(--bg-dark);
+            padding: 0 45px;
+            height: 90px;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .logo {
+            color: var(--accent);
+            font-size: 32px;
+            font-weight: 900;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .search-container {
+            position: relative;
+            width: 100%;
+            max-width: 500px;
+            display: flex;
+            align-items: center;
+        }
+
+        .search-input {
+            width: 100%;
+            height: 40px;
+            padding: 0 40px;
+            border-radius: 10px;
+            border: none;
+            outline: none;
+            font-size: 16px;
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 12px;
+            color: #777;
+        }
+
+        .clear-btn {
+            position: absolute;
+            right: 12px;
+            color: #777;
+            background: none;
+            border: none;
+            cursor: pointer;
+        }
+
+        .sign-out-btn {
+            text-decoration: none;
+            color: white;
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        /* Content Container */
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: calc(100vh - 90px);
+            padding: 20px;
+        }
+
+        /* Profile Section (Visible when logged in) */
+        .profile-img {
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            border: 6px solid var(--profile-green);
+            object-fit: cover;
+            margin-bottom: 50px;
+        }
+
+        .info-wrapper {
+            width: 100%;
+            max-width: 700px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .info-row {
+            display: flex;
+            align-items: center;
+        }
+
+        .info-label {
+            width: 120px;
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        .info-box {
+            flex: 1;
+            background-color: white;
+            color: #1a1d23;
+            padding: 12px 30px;
+            border-radius: 50px;
+            font-size: 22px;
+            font-weight: 500;
+            text-align: center;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Login Prompt (Visible when not logged in) */
+        .login-card {
+            background: var(--bg-dark);
+            padding: 50px;
+            border-radius: 20px;
+            text-align: center;
+            border: 1px solid #333;
+        }
+
+        .login-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            background: #4285F4;
+            color: white;
+            padding: 15px 30px;
+            border-radius: 10px;
+            text-decoration: none;
+            font-weight: bold;
+            font-size: 20px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <nav class="navbar">
+        <a href="/" class="logo">ANYAO</a>
+        <div class="search-container">
+            <i class="fa-solid fa-magnifying-glass search-icon"></i>
+            <input type="text" placeholder="Search..." class="search-input">
+            <button class="clear-btn"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        {% if current_user.is_authenticated %}
+        <a href="{{ url_for('auth.logout') }}" class="sign-out-btn">Sign out</a>
+        {% else %}
+        <div style="width: 80px;"></div>
+        {% endif %}
+    </nav>
+
+    <div class="container">
+        {% if current_user.is_authenticated %}
+        <img src="https://via.placeholder.com/200" class="profile-img" alt="Profile">
+
+        <div class="info-wrapper">
+            <div class="info-row">
+                <span class="info-label">E-mail:</span>
+                <div class="info-box">{{ session.get('user_email', 'kasidit.bo@kkumail.com') }}</div>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Name:</span>
+                <div class="info-box">{{ current_user.name }}</div>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Age:</span>
+                <div class="info-box">8</div>
+            </div>
+        </div>
+        {% else %}
+        <div class="login-card">
+            <h1>Welcome to ANYAO</h1>
+            <p>Please sign in with your Google account to view your profile.</p>
+            <a href="{{ url_for('auth.login') }}" class="login-btn">
+                <i class="fa-brands fa-google"></i> Login with Google
+            </a>
+        </div>
+        {% endif %}
+    </div>
+
+</body>
+
+</html>

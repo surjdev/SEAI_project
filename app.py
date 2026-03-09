@@ -6,8 +6,8 @@ from auth import auth_bp, oauth
 
 load_dotenv()
 
-app = Flask(__name__)
-app.secret_key = os.getenv('FLASK_SECRET_ID') # Keep this safe!
+app = Flask(__name__, template_folder='test_template') #ถ้าจะใช้ frontend จริงๆ ให้ลบ template_folder='test_template' ออกเด้อ
+app.secret_key = os.getenv('FLASK_SECRET_ID')
 
 # Flask-Login Setup
 login_manager = LoginManager()
@@ -26,17 +26,15 @@ class User(UserMixin):
 
 @login_manager.user_loader
 def load_user(user_id):
-    # In a real app, query your Database: return User.query.get(user_id)
     return User(id=user_id, name="User Name")
 
 @app.route('/')
 def index():
-    return f"Hello {current_user.name if current_user.is_authenticated else 'Guest'}!"
+    return render_template('index.html')
 
 @app.route('/protected')
-@login_required  # This protects the page!
+@login_required 
 def secret_page():
-    return "This is a hidden family page only for logged-in users."
-
+    return render_template('index.html')
 if __name__ == '__main__':
     app.run(debug=True)
