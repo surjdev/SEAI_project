@@ -1,6 +1,12 @@
 from flask import Flask, render_template, request, jsonify, abort
 from Database.database import get_db
-from Database.Controllers import get_all_books, get_all_users, update_user_favorite, update_user_readlater
+from Database.Controllers import (
+    get_all_books,
+    get_all_users,
+    update_user_favorite,
+    update_user_review,
+    update_user_readlater,
+)
 
 
 app = Flask(__name__, template_folder="templates")
@@ -17,6 +23,40 @@ def users_view():
     with get_db() as db:
         users = get_all_users(db)
         return render_template("users.html", users=users)
+
+@app.route("/review", methods=["POST"])
+def review():
+    # Accept both JSON body and form data
+    data = request.get_json(silent=True) or request.form
+
+    user_id = data.get("user_id")
+    book_id = data.get("book_id")
+    rating  = data.get("rating")
+    comment = data.get("comment", "").strip()
+
+    # ── Validate required fields ──────────────────────────────────────────────
+    if not user_id or not book_id:
+        return jsonify({"error": "Missing required fields 'user_id' and 'book_id'"}), 400
+
+    if not rating:
+        return jsonify({"error": "Missing required field 'rating'"}), 400
+
+    try:
+        user_id = int(user_id)
+        book_id = int(book_id)
+        rating  = int(rating)
+    except (ValueError, TypeError):
+        return jsonify({"error": "'user_id', 'book_id', and 'rating' must be integers"}), 400
+
+    if not (1 <= rating <= 10):
+        return jsonify({"error": "'rating' must be between 1 and 10"}), 400
+
+    # ── Upsert the review ─────────────────────────────────────────────────────
+    with get_db() as db:
+        result = update_user_review(db, user_id, book_id, rating, comment)
+        return jsonify(result), 200
+
+
 
 @app.route('/favorite', methods=['POST'])
 def favorite():
