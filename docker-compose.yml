@@ -62,13 +62,11 @@ services:
     image: ngrok/ngrok:3
     container_name: ngrok-tunnel
     restart: unless-stopped
-    depends_on:
-      - ai_api
     ports:
       - "4040:4040"
     environment:
       - NGROK_AUTHTOKEN=${NGROK_AUTHTOKEN}
-    command: http ai_api:2569
+    command: http ai_api:5001
     depends_on:
       - ai_api
 
