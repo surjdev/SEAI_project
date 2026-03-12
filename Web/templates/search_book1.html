@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Book Search (JSON/JS)</title>
+    <style>
+        body { font-family: sans-serif; margin: 40px; line-height: 1.6; }
+        .search-box { margin-bottom: 20px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background-color: #f8f9fa; }
+        tr:nth-child(even) { background-color: #f2f2f2; }
+    </style>
+</head>
+<body>
+
+    <h2>Book Search (API Mode)</h2>
+
+    <div class="search-box">
+        <input type="text" id="searchInput" placeholder="Search by title or author...">
+        <button onclick="searchBooks()">Search</button>
+    </div>
+
+    <table id="resultsTable">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Title</th>
+                <th>Author</th>
+            </tr>
+        </thead>
+        <tbody id="tableBody">
+            </tbody>
+    </table>
+
+    <script>
+        async function searchBooks() {
+            const query = document.getElementById('searchInput').value;
+            const tableBody = document.getElementById('tableBody');
+            
+            try {
+                // 1. Fetch data from the Flask API
+                const response = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
+                const books = await response.json();
+
+                // 2. Clear existing results
+                tableBody.innerHTML = '';
+
+                // 3. Handle empty results
+                if (books.length === 0) {
+                    tableBody.innerHTML = '<tr><td colspan="3" style="text-align:center;">No books found.</td></tr>';
+                    return;
+                }
+
+                // 4. Build table rows from JSON
+                books.forEach(book => {
+                    const row = `
+                        <tr>
+                            <td>${book.id}</td>
+                            <td>${book.title}</td>
+                            <td>${book.author}</td>
+                        </tr>
+                    `;
+                    tableBody.innerHTML += row;
+                });
+
+            } catch (error) {
+                console.error('Error fetching books:', error);
+                alert('Something went wrong with the search.');
+            }
+        }
+
+        // Optional: Trigger search on "Enter" key
+        document.getElementById('searchInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') searchBooks();
+        });
+    </script>
+</body>
+</html>
