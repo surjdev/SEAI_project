@@ -1,0 +1,74 @@
+services:
+  db_server:
+    image: postgres:17
+    container_name: postgres-db
+    restart: always
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    # expose:
+    #   - "5432"
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./database/my_backup.dump:/docker-entrypoint-initdb.d/my_backup.dump
+      - ./database/restore.sh:/docker-entrypoint-initdb.d/restore.sh
+      - ./database/pgdata:/var/lib/postgresql/data
+
+  pgadmin:
+    image: dpage/pgadmin4:9.13.0
+    container_name: pgadmin-gui
+    restart: always
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${DB_GUI_EMAIL}
+      PGADMIN_DEFAULT_PASSWORD: ${DB_GUI_PASSWORD}
+    ports:
+      - "8080:80"
+    depends_on:
+      - db_server
+
+  ai_api:
+    build:
+      context: ./AI
+      dockerfile: Dockerfile
+    container_name: ai-api
+    restart: unless-stopped
+    # expose:
+    #   - "5001"
+    ports:
+      - "5001:5001"
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://${DB_USER}:${DB_PASSWORD}@db_server:5432/${DB_NAME}
+    depends_on:
+      - db_server
+
+  # web_app:
+  #   build:
+  #     context: ./web
+  #     dockerfile: Dockerfile
+  #   container_name: web-app
+  #   restart: unless-stopped
+  #   ports:
+  #     - "5000:5000"
+  #   environment:
+  #     - DATABASE_URL=postgresql://${DB_USER}:${DB_PASSWORD}@db_server:5432/${DB_NAME}
+  #     - AI_API_URL=http://ai_api:5001
+  #   depends_on:
+  #     - db_server
+  #     - ai_api
+
+  ngrok:
+    image: ngrok/ngrok:3
+    container_name: ngrok-tunnel
+    restart: unless-stopped
+    ports:
+      - "4040:4040"
+    environment:
+      - NGROK_AUTHTOKEN=${NGROK_AUTHTOKEN}
+    command: http ai_api:5001
+    depends_on:
+      - ai_api
+
+volumes:
+  pgdata:

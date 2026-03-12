@@ -1,24 +1,25 @@
 import pandas as pd
-# import numpy as np
 from pathlib import Path
 
-BUFFER_PATH = Path("AI/raw_buffer.csv")
+BUFFER_PATH = Path("raw_buffer.csv")
 
 from surprise import SVD, Dataset, Reader, accuracy
 from surprise.model_selection import train_test_split, GridSearchCV
 import pickle
 
 class SVD_method():
-    buffer_dir = Path("AI/svd_results")
+    buffer_dir = Path("svd_results")
     buffer_model_path = [
         buffer_dir / "model.pkl", 
         buffer_dir / "model_plus.pkl"
     ]
     def __init__(self, data:pd.DataFrame):
+        print("Initializing SVD Model...")
         self.buffer_dir.mkdir(parents=True, exist_ok=True)
         self.data = self.prepare_data(data)
         self.all_books = self.data["book_id"].unique()
         self.model = self.load_model(self.data)
+        print("SVD Model Load Successful")
     
     def train(self, data:pd.DataFrame):
         def individual_train(data, rating_col):
@@ -40,8 +41,10 @@ class SVD_method():
             return best_model
         
         model = {}
+        print("Training Model Plus...")
         model["model_plus"] = individual_train(data, "book_rating_plus")
         data = data.dropna(subset="book_rating")
+        print("Training Model...")
         model["model"] = individual_train(data, "book_rating")
         return model
 
@@ -94,16 +97,18 @@ class SVD_method():
         return data
 
 class Statisical_method():
-    buffer_dir = Path("AI/statistical_results")
+    buffer_dir = Path("statistical_results")
     buffer_recommendation_path = [
         buffer_dir / "most_popular.csv", 
         buffer_dir / "most_rated.csv",
         buffer_dir / "most_controversial.csv", 
     ]
     def __init__(self, data:pd.DataFrame):
+        print("Initializing Statistical Method...")
         self.buffer_dir.mkdir(parents=True, exist_ok=True)
         data = self.prepare_data(data)
         self.df_recommend = self.load_data(data)
+        print("Statistical Method Load Successful")
         
     def update(self, data:pd.DataFrame):
         try:
