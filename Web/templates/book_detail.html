@@ -194,18 +194,54 @@
         gap: 30px;
       }
 
+      /* ── Updated Book Cover Styles ────────────────────────── */
       .book-cover {
-        width: 200px;
-        min-width: 200px;
-        height: 290px;
+        flex: 0 0 280px; /* Fixed width on large screens */
+        max-width: 280px;
+        height: 400px;   /* Standard book aspect ratio */
         background: linear-gradient(145deg, #23273a, #1a1d2e);
-        border-radius: 10px;
+        border-radius: 12px;
+        overflow: hidden; /* Clips image to border radius */
         display: flex;
-        flex-direction: column;
         align-items: center;
         justify-content: center;
-        flex-shrink: 0;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        transition: transform 0.3s ease;
+      }
+
+      .book-cover:hover {
+        transform: scale(1.02);
+      }
+
+      .book-cover img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover; /* This is the magic: no more stretching */
+        display: block;
+      }
+
+      .book-cover i {
+        font-size: 80px;
+        color: #3a4060;
+        opacity: 0.6;
+      }
+
+      /* Responsive adjustment for tablets/phones */
+      @media (max-width: 768px) {
+        .left-col {
+          flex-direction: column;
+          align-items: center;
+          text-align: center;
+        }
+        .book-cover {
+          flex: 0 0 auto;
+          width: 220px;
+          height: 320px;
+        }
+        .rating-container {
+          justify-content: center;
+        }
       }
 
       .book-info h1 {
@@ -274,11 +310,11 @@
         transition: 0.3s;
         font-size: 0.95rem;
       }
-      .btn-later {
+      .btn-deactivate {
         background: #333;
         color: white;
       }
-      .btn-fav {
+      .btn-activate {
         background: #49f4df;
         color: #0b2e2a;
       }
@@ -534,28 +570,34 @@
       </div>
 
       <div class="nav-right">
-        <a href="#" class="nav-item">
+        <a href="/search" class="nav-item">
+          <div class="icon-box"><i class="fa-solid fa-magnifying-glass"></i></div>
+          <span>Search</span>
+        </a>
+        {% if user["mode"] == "logged_in" %}
+        <a href="/favorite" class="nav-item">
           <div class="icon-box"><i class="fa-solid fa-bookmark"></i></div>
           <span>Favorite</span>
         </a>
-        <a href="#" class="nav-item">
+        <a href="/readlater" class="nav-item">
           <div class="icon-box">
             <i class="fa-solid fa-clock-rotate-left"></i>
           </div>
           <span>Read later</span>
         </a>
-        <div class="nav-item">
+        {% endif %}
+        <a href={{ "/profile" if user["mode"] == "logged_in" else "/auth/login" }} class="nav-item">
           <div class="icon-box">
             <div class="user-profile-img">
-              {% if user and user.profileImage %}
-              <img src="{{ user.profileImage }}" alt="Profile" />
+              {% if user["mode"] == "logged_in" and user['user'].user_image %}
+              <img src="{{ user['user'].user_image }}" alt="Profile" />
               {% else %}
               <i class="fa-solid fa-user" style="font-size: 20px"></i>
               {% endif %}
             </div>
           </div>
-          <span>{{ user.firstName if user else 'Guest' }}</span>
-        </div>
+          <span>{{ user['user'].username if user['mode'] == 'logged_in' else user['mode'] }}</span>
+        </a>
       </div>
     </nav>
 
@@ -564,39 +606,39 @@
       <!-- Left: cover + book info -->
       <div class="left-col">
         <div class="book-cover">
-          <i
-            class="fa-solid fa-book-open"
-            style="font-size: 62px; color: #3a4060; margin-bottom: 8px"
-          ></i>
+          {% if book.image_url %}
+            <img src="{{ book.image_url }}" alt="{{ book.name }} Cover" />
+          {% else %}
+            <i class="fa-solid fa-book-open"></i>
+          {% endif %}
         </div>
 
         <div class="book-info">
-          <h1>{{ book.title }}</h1>
-          <div class="author">เขียนโดย : {{ book.author }}</div>
+          <h1>{{ book.name }}</h1>
+          <div class="author"><strong>เขียนโดย:</strong> {{ book.author.name }}</div>
+          <div class="publisher"><strong>สำนักพิมพ์:</strong> {{ book.publisher.name }}</div>
+          <div class="published_year"><strong>ปีที่พิมพ์:</strong> {{ book.published_year }}</div>
 
           <div class="rating-container">
             <span class="rating-text"
-              >Avg: <strong id="avgRating">{{ book.avg_rating }}</strong></span
+              >Avg: <strong id="avgRating">{{ "{:.1f}".format(book_stat.avg_rating) }}</strong></span
             >
             <span class="rating-text"
-              >(<span id="numRating">{{ "{:,}".format(book.num_rating) }}</span>
+              >(<span id="numRating">{{ "{:,}".format(book_stat.review_count) }}</span>
               ratings)</span
             >
           </div>
-
-          <div class="details-section">
-            <h3>รายละเอียดหนังสือ</h3>
-            <p>{{ book.description }}</p>
-          </div>
-
-          <div class="action-buttons">
-            <button class="btn btn-later">
+          
+          {% if user['mode'] == 'logged_in' %}
+          <div class="action-buttons" id="actionButtons">
+            <button class="btn {{ 'btn-activate' if is_readlater else 'btn-deactivate' }}" id="readLaterBtn">
               <i class="fa-solid fa-clock-rotate-left"></i> อ่านภายหลัง
             </button>
-            <button class="btn btn-fav">
+            <button class="btn {{ 'btn-activate' if is_favorite else 'btn-deactivate' }}" id="favoriteBtn">
               <i class="fa-solid fa-bookmark"></i> รายการโปรด
             </button>
           </div>
+          {% endif %}
         </div>
       </div>
 
@@ -605,10 +647,11 @@
         <div class="review-title">REVIEW</div>
 
         <!-- My comment input -->
+        {% if user['mode'] == 'logged_in' %}
         <div class="my-review">
           <div class="avatar">
-            {% if user and user.profileImage %}
-            <img src="{{ user.profileImage }}" alt="Profile" />
+            {% if user["user"].user_image %}
+            <img src="{{ user["user"].user_image }}" alt="Profile" />
             {% else %}
             <i class="fa-solid fa-user"></i>
             {% endif %}
@@ -617,7 +660,7 @@
             <div class="my-review-header">
               <!-- ของจริงต้องให้ Login (auth) ก่อนเท่านั้นถึงจะสามารถ Review ได้ -->
               <span class="my-username"
-                >{{ user.firstName if user else 'Guest' }}</span
+                >{{ user["user"].username}}</span
               >
               <!-- Half-star rating 1-10: each .star-wrap has left=odd, right=even value -->
               <div class="mini-stars" id="myStars">
@@ -640,78 +683,83 @@
             <button class="submit-btn" id="submitComment">Post</button>
           </div>
         </div>
+        {%endif%}
 
         <!-- Comments list -->
         <div class="comments-list" id="commentsList">
-          {% for c in comments %}
+          {% for review in book.reviews if (review.comment is not none) or (review.book_rating is not none) %}
           <div class="comment-item">
             <div class="avatar">
-              {% if c.profileImage %}
-              <img src="{{ c.profileImage }}" alt="{{ c.username }}" />
+              {% if review.user.user_image %}
+              <img src="{{ review.user.user_image }}" alt="{{ review.user.username }}" />
               {% else %}
               <i class="fa-solid fa-user"></i>
               {% endif %}
             </div>
             <div class="comment-body">
               <div class="comment-header">
-                <span class="comment-username">{{ c.username }}</span>
+                <span class="comment-username">{{ review.user.username }}</span>
                 <!-- Half-star display for comment rating (scale 1-10) -->
                 <span
                   class="comment-stars"
                   style="display: inline-flex; gap: 2px"
                 >
-                  {% for s in range(1, 6) %} {% set left_val = s * 2 - 1 %} {%
-                  set right_val = s * 2 %}
-                  <span
-                    style="
-                      position: relative;
-                      display: inline-block;
-                      width: 14px;
-                      height: 14px;
-                    "
-                  >
-                    <i
-                      class="fa-regular fa-star"
+                  {% if review.book_rating is not none %}
+                    {% for s in range(1, 6) %} {% set left_val = s * 2 - 1 %} {%
+                    set right_val = s * 2 %}
+                    <span
                       style="
-                        position: absolute;
-                        top: 0;
-                        left: 0;
-                        font-size: 13px;
-                        color: #444;
+                        position: relative;
+                        display: inline-block;
+                        width: 14px;
+                        height: 14px;
                       "
-                    ></i>
-                    {% if c.rating >= right_val %}
-                    <i
-                      class="fa-solid fa-star"
-                      style="
-                        position: absolute;
-                        top: 0;
-                        left: 0;
-                        font-size: 13px;
-                        color: #f1e05a;
-                        width: 100%;
-                        overflow: hidden;
-                      "
-                    ></i>
-                    {% elif c.rating >= left_val %}
-                    <i
-                      class="fa-solid fa-star"
-                      style="
-                        position: absolute;
-                        top: 0;
-                        left: 0;
-                        font-size: 13px;
-                        color: #f1e05a;
-                        width: 50%;
-                        overflow: hidden;
-                      "
-                    ></i>
-                    {% endif %}
-                  </span>
-                  {% endfor %}
+                    >
+                      <i
+                        class="fa-regular fa-star"
+                        style="
+                          position: absolute;
+                          top: 0;
+                          left: 0;
+                          font-size: 13px;
+                          color: #444;
+                        "
+                      ></i>
+                      {% if review.book_rating >= right_val %}
+                      <i
+                        class="fa-solid fa-star"
+                        style="
+                          position: absolute;
+                          top: 0;
+                          left: 0;
+                          font-size: 13px;
+                          color: #f1e05a;
+                          width: 100%;
+                          overflow: hidden;
+                        "
+                      ></i>
+                      {% elif review.book_rating >= left_val %}
+                      <i
+                        class="fa-solid fa-star"
+                        style="
+                          position: absolute;
+                          top: 0;
+                          left: 0;
+                          font-size: 13px;
+                          color: #f1e05a;
+                          width: 50%;
+                          overflow: hidden;
+                        "
+                      ></i>
+                      {% endif %}
+                    </span>
+                    {% endfor %}
+                  {% else %}
+                    <span class="comment-stars">No rating</span>
+                  {% endif %}
                 </span>
               </div>
-              <div class="comment-text">{{ c.text }}</div>
+              <div class="comment-text">{{ review.comment if review.comment else "-" }}</div>
             </div>
           </div>
           {% endfor %}
@@ -740,15 +788,16 @@
 
         try {
           const response = await fetch(
-            `/api/search?q=${encodeURIComponent(query)}`,
+            `/search/engine?query=${encodeURIComponent(query)}`,
           );
           const books = await response.json();
+          console.log(books);
           suggestionsBox.innerHTML = "";
           if (books.length > 0) {
             books.forEach((book) => {
               const div = document.createElement("div");
               div.className = "suggestion-item";
-              div.innerHTML = highlightText(book.title, query);
+              div.innerHTML = highlightText(book.name, query);
               div.onclick = () => {
                 window.location.href = `/book/${book.id}`;
               };
@@ -825,7 +874,7 @@
         return html;
       }
 
-      /* ── Submit: sends comment + rating together ─────────── */
+      /* ── Submit: sends comment + rating together as Form Data ── */
       document.getElementById("submitComment").addEventListener("click", async () => {
         const text = document.getElementById("commentInput").value.trim();
 
@@ -834,57 +883,54 @@
           return;
         }
 
+        // Create the FormData object
+        const formData = new FormData();
+        formData.append("book_id", "{{ book.id }}");
+        formData.append("rating", parseInt(myRating) || 0);
+        formData.append("comment", text || "");
+
         try {
-          // 1. Save the comment (with rating on 1-10 scale)
-          const commentRes = await fetch("/api/comment", {
+          const commentRes = await fetch("/review", {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              book_id: {{ book.id }},
-              username: "{{ user.firstName if user else 'Guest' }}",
-              rating: parseInt(myRating) || 0,
-              text: text || ""
-            })
+            // IMPORTANT: No headers needed! Fetch sets them automatically for FormData.
+            body: formData 
           });
 
-          // 2. Also update the avg rating if user selected stars
-          if (parseInt(myRating) > 0) {
-            const rateRes = await fetch("/api/rate", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ book_id: {{ book.id }}, rating: parseInt(myRating) })
-            });
-            if (rateRes.ok) {
-              const rateData = await rateRes.json();
-              document.getElementById("avgRating").textContent = rateData.avg_rating;
-              document.getElementById("numRating").textContent = rateData.num_rating.toLocaleString();
-            }
-          }
-
           if (commentRes.ok) {
-            const c = await commentRes.json();
-            if (c.text) {
-              const list = document.getElementById("commentsList");
-              const starsHtml = buildHalfStarHtml(c.rating);
-              const item = document.createElement("div");
-              item.className = "comment-item";
-              item.innerHTML = `
-                <div class="avatar"><i class="fa-solid fa-user"></i></div>
-                <div class="comment-body">
-                  <div class="comment-header">
-                    <span class="comment-username">${c.username}</span>
-                    <span class="comment-stars">${starsHtml}</span>
-                  </div>
-                  <div class="comment-text">${c.text}</div>
-                </div>`;
-              list.prepend(item);
-            }
-            // Clear inputs
-            document.getElementById("commentInput").value = "";
-            myRating = 0;
-            applyStarHighlight(0);
+            location.reload(); 
+          } else {
+            alert("Something went wrong. Please try again.");
           }
-        } catch (err) { console.error("Submit error:", err); }
+        } catch (err) { 
+          console.error("Submit error:", err); 
+        }
+      });
+
+
+      // Add event listeners for read later and favorite buttons
+      document.getElementById("readLaterBtn").addEventListener("click", async () => {
+        const formData = new FormData();
+        formData.append("book_id", "{{ book.id }}");
+        formData.append("user_id", "{{ user['user'].id }}");
+        const res = await fetch("/readlater", {
+          method: "POST",
+          body: formData
+        });
+        if (res.ok) {
+          location.reload();
+        }
+      });
+      document.getElementById("favoriteBtn").addEventListener("click", async () => {
+        const formData = new FormData();
+        formData.append("book_id", "{{ book.id }}");
+        formData.append("user_id", "{{ user['user'].id }}");
+        const res = await fetch("/favorite", {
+          method: "POST",
+          body: formData
+        });
+        if (res.ok) {
+          location.reload();
+        }
       });
     </script>
   </body>

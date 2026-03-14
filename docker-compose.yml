@@ -1,7 +1,7 @@
 services:
   db_server:
     image: postgres:17
-    container_name: postgres-db
+    container_name: postgres_db
     restart: always
     environment:
       POSTGRES_USER: ${DB_USER}
@@ -40,23 +40,28 @@ services:
       - "5001:5001"
     environment:
       - DATABASE_URL=postgresql+asyncpg://${DB_USER}:${DB_PASSWORD}@db_server:5432/${DB_NAME}
+      - INTERNAL_TOKEN=${INTERNAL_TOKEN}
     depends_on:
       - db_server
 
-  # web_app:
-  #   build:
-  #     context: ./web
-  #     dockerfile: Dockerfile
-  #   container_name: web-app
-  #   restart: unless-stopped
-  #   ports:
-  #     - "5000:5000"
-  #   environment:
-  #     - DATABASE_URL=postgresql://${DB_USER}:${DB_PASSWORD}@db_server:5432/${DB_NAME}
-  #     - AI_API_URL=http://ai_api:5001
-  #   depends_on:
-  #     - db_server
-  #     - ai_api
+  web_app:
+    build:
+      context: ./web
+      dockerfile: Dockerfile
+    container_name: web-app
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    environment:
+      - DATABASE_URL=postgresql://${DB_USER}:${DB_PASSWORD}@db_server:5432/${DB_NAME}
+      - AI_API_URL=http://ai_api:5001
+      - INTERNAL_TOKEN=${INTERNAL_TOKEN}
+      - FLASK_SECRET_ID=${FLASK_SECRET_ID}
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
+    depends_on:
+      - db_server
+      - ai_api
 
   ngrok:
     image: ngrok/ngrok:3
@@ -66,9 +71,9 @@ services:
       - "4040:4040"
     environment:
       - NGROK_AUTHTOKEN=${NGROK_AUTHTOKEN}
-    command: http ai_api:5001
+    command: http web_app:5000
     depends_on:
-      - ai_api
+      - web_app
 
 volumes:
   pgdata:

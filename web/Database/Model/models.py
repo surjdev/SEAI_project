@@ -1,8 +1,9 @@
 from sqlalchemy import (
-    Column, Integer, String, Boolean, Text, ForeignKey, CheckConstraint
+    Column, Integer, String, Boolean, Text, ForeignKey, CheckConstraint, Identity
 )
 from sqlalchemy.orm import relationship
 from Database.database import Base
+from flask_login import UserMixin
 
 
 class Author(Base):
@@ -23,10 +24,10 @@ class Publisher(Base):
     books = relationship("Book", back_populates="publisher")
 
 
-class User(Base):
+class User(Base, UserMixin):
     __tablename__ = "users"
 
-    id = Column(Integer, primary_key=True)
+    id = Column(Integer, Identity(start=1, always=False), primary_key=True)
     username = Column(String(255))
     birth_year = Column(Integer)
     email = Column(String(255), unique=True)
@@ -40,7 +41,7 @@ class User(Base):
 class Book(Base):
     __tablename__ = "books"
 
-    id = Column(Integer, primary_key=True)
+    id = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(String(1000), nullable=False)
     published_year = Column(Integer)
     image_url = Column(String(2083))

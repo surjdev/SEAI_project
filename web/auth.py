@@ -2,6 +2,8 @@ import os
 from flask import Blueprint, url_for, redirect, session
 from authlib.integrations.flask_client import OAuth
 from flask_login import login_user, logout_user
+from Database.Controllers.user_controller import login_or_register_user
+from Database.database import get_db
 
 auth_bp = Blueprint('auth', __name__)
 oauth = OAuth()
@@ -25,17 +27,21 @@ def callback():
     user_info = token.get('userinfo')
     
     if user_info:
-        session['user_id'] = user_info['sub']
-        session['user_name'] = user_info['name']  
-        session['user_email'] = user_info['email']
+        with get_db() as db:
+            user = login_or_register_user(db, user_info)
         
-        from app import User
-        user = User(id=user_info['sub'], name=user_info['name'])
+        # Login user
         login_user(user)
-    
-    return redirect('/')
+
+        # session['user_email'] = user.email
+        # session['user_id'] = user.id
+        # session['user_name'] = user.username  
+    return redirect('/home')
 
 @auth_bp.route('/logout')
 def logout():
     logout_user()
-    return redirect('/')
+    # session.pop('user_email', None)
+    # session.pop('user_id', None)
+    # session.pop('user_name', None)
+    return redirect('/home')

@@ -4,122 +4,35 @@ from Database.database import engine
 from Database.Model.models import Book, UserReview, Author, Publisher
 from sqlalchemy.orm import joinedload, load_only, contains_eager
 
-db = Session(engine)
-
-def get_all_books() -> list[dict]:
-    # 1. ใช้ joinedload ดึงความสัมพันธ์ทั้งหมดมาใน Query เดียว
-    books = db.query(Book).options(
-        joinedload(Book.reviews),
-        joinedload(Book.readlater),
-        joinedload(Book.author),
-        joinedload(Book.publisher)
-    ).limit(100).all()
-
-    result = []
-
-    for book in books:
-        # รายชื่อ User ID ที่กด Favourite
-        fav_users = [
-            r.user_id for r in book.reviews if r.is_favourite
-        ]
-
-        # รายชื่อ User ID ที่กด Read Later
-        readlater_users = [
-            rl.user_id for rl in book.readlater
-        ]
-
-        # Average Rating
-        avg_rating = (
-            db.query(func.avg(UserReview.book_rating))
-            .filter(UserReview.book_id == book.id)
-            .scalar()
-        )
-
-        # รายการความคิดเห็น (User ID + ข้อความ)
-        comments = [
-            {"user_id": r.user_id, "text": r.comment}
-            for r in book.reviews if r.comment
-        ]
-
-        result.append({
-            "book_id": book.id,
-            "name": book.name,
-            "image_url": book.image_url,
-            "author_name": book.author.name if book.author else None,
-            "publisher_name": book.publisher.name if book.publisher else None,
-            "published_year": book.published_year,
-            "favourite_users": fav_users,       
-            "readlater_users": readlater_users, 
-            "avg_rating": round(float(avg_rating), 2) if avg_rating else None,
-            "comments": comments,
-        })
-
-    return result
-
-def get_book_detail(book_id,user_id) -> dict:
-    # select(Book).where(Book.name == f"&{query}&")
-    
-    db = Session(engine)
+def get_book_detail(db: Session, book_id) -> dict:
     book = db.query(Book).options(
-        joinedload(Book.reviews),
+        joinedload(Book.reviews).joinedload(UserReview.user),
         joinedload(Book.readlater),
         joinedload(Book.author),
         joinedload(Book.publisher)
-    )
-    
-    if not book:
-        return {"error": "Book not found"}
+    ).filter(Book.id == book_id).first()
+    return book
 
-    if user_id == None:
-        guest_mode = True
-        book = book.filter(Book.id == book_id).first()
-        user_rate = None
-    else:
-        guest_mode = False
-        book = book.filter(
-            Book.id == book_id, 
-            UserReview.user_id == user_id).first()
-        
-        user_review = next((r for r in book.reviews if r.user_id == int(user_id)), None)
-        user_rate = user_review.book_rating if user_review else None
-
-    # Average Rating
-    avg_rating = (
-        db.query(func.avg(UserReview.book_rating))
-        .filter(UserReview.book_id == book.id)
-        .scalar()
-    )
-
-    # รายการความคิดเห็น (User ID + ข้อความ)
-    comments = [
-        {"user_id": r.user_id, "text": r.comment}
-        for r in book.reviews if r.comment
-    ]
-
-    return {
-        "book_id": book.id,
-        "name": book.name,
-        "image_url": book.image_url,
-        "author_name": book.author.name if book.author else None,
-        "publisher_name": book.publisher.name if book.publisher else None,
-        "published_year": book.published_year,
-        "guest_mode":guest_mode,
-        "user_rate" : user_rate,
-        "avg_rating": round(float(avg_rating), 2) if avg_rating else None,
-        "comments": comments,
-    }
+def get_book_details(db: Session, book_reccomend: dict) -> dict:
+    result = {}
+    for reccomend_type in book_reccomend:
+        result[reccomend_type] = []
+        for book_id in book_reccomend[reccomend_type]["book_id"]:
+            book = get_book_detail(db, book_id)
+            result[reccomend_type].append(book)
+    return result
 
 _search_index: list[dict] = []
 
-def load_search_index():
+def load_search_index(db: Session):
     """Load all books into memory for fast in-memory search. Call once at startup."""
     global _search_index
     books = (
         db.query(Book)
-        .join(Book.author)
+        .join(Book.author)                          # JOIN แทน subquery
         .join(Book.publisher)
         .options(
-            load_only(Book.id, Book.name),
+            load_only(Book.id, Book.name, Book.image_url),
             contains_eager(Book.author).load_only(Author.name),
             contains_eager(Book.publisher).load_only(Publisher.name),
         )
@@ -129,6 +42,7 @@ def load_search_index():
         {
             "id":        book.id,
             "name":      book.name or "",
+            "image_url": book.image_url or "",
             "author":    book.author.name if book.author else "",
             "publisher": book.publisher.name if book.publisher else "",
             "_text":     f"{book.name} {book.author.name if book.author else ''} {book.publisher.name if book.publisher else ''}".lower(),
@@ -141,20 +55,25 @@ def search_book_fast(query: str, limit: int = 10) -> list[dict]:
     if not query or not _search_index:
         return []
 
-    q = query.lower()
-    tokens = q.split()
+    query = query.lower()
+    tokens = query.split()
     results = []
 
     for book in _search_index:
-        if all(t in book["_text"] for t in tokens):
+        if all(token in book["_text"] for token in tokens):
             name = book["name"].lower()
-            score = 3 if name == q else (2 if name.startswith(q) else 1)
+            score = 3 if name == query else (2 if name.startswith(query) else 1)
             results.append((book, score))
 
     results.sort(key=lambda x: x[1], reverse=True)
     return [
-        {"id": b["id"], "name": b["name"], "author": b["author"], "publisher": b["publisher"], "score": s}
-        for b, s in results[:limit]
+        {"id": book["id"], 
+         "name": book["name"], 
+         "image_url": book["image_url"], 
+         "author": book["author"], 
+         "publisher": book["publisher"], 
+         "score": score}
+        for book, score in results[:limit]
     ]
 
 def search_book(query: str, limit: int = 10, page: int = 1):

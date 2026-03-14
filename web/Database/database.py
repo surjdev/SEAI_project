@@ -1,18 +1,9 @@
 import os
-from dotenv import load_dotenv
 from sqlalchemy import create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker
 from contextlib import contextmanager
 
-load_dotenv()
-
-DB_USER = os.getenv('DB_USER')
-DB_PASS = os.getenv('DB_PASSWORD')
-DB_HOST = os.getenv('DB_HOST')
-DB_PORT = os.getenv('DB_PORT')
-DB_NAME = os.getenv('DB_NAME')
-
-DATABASE_URL = f"postgresql://{DB_USER}:{DB_PASS}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+DATABASE_URL = os.getenv('DATABASE_URL')
 
 engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
@@ -26,3 +17,21 @@ def get_db():
         yield db
     finally:
         db.close()
+
+from sqlalchemy import text
+
+def sync_sequences(db_session):
+    tables = ['users']
+    try:
+        for table in tables:
+            # SQL to sync sequence based on max ID
+            query = text(f"""
+                SELECT setval(pg_get_serial_sequence('{table}', 'id'), 
+                coalesce((SELECT MAX(id) FROM {table}), 0) + 1, false);
+            """)
+            db_session.execute(query)
+        db_session.commit()
+        print("Sequences synced successfully!")
+    except Exception as e:
+        db_session.rollback()
+        print(f"Sequence sync failed: {e}")

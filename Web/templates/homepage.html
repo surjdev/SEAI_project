@@ -9,8 +9,8 @@
       content="ANYAO - Browse and discover books you love."
     />
     <link
-      rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+      rel="stylesheet"
     />
     <link
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
@@ -220,6 +220,7 @@
         padding: 10px 36px;
         border-radius: 16px;
         margin-bottom: 28px;
+        margin-top: 28px;
         letter-spacing: 0.5px;
         box-shadow: 0 4px 18px rgba(73, 244, 223, 0.08);
       }
@@ -384,58 +385,65 @@
       </div>
 
       <div class="nav-right">
-        <a href="#" class="nav-item">
+        <a href="/search" class="nav-item">
+          <div class="icon-box"><i class="fa-solid fa-magnifying-glass"></i></div>
+          <span>Search</span>
+        </a>
+        {% if user["mode"] == "logged_in" %}
+        <a href="/favorite" class="nav-item">
           <div class="icon-box"><i class="fa-solid fa-bookmark"></i></div>
           <span>Favorite</span>
         </a>
-        <a href="#" class="nav-item">
+        <a href="/readlater" class="nav-item">
           <div class="icon-box">
             <i class="fa-solid fa-clock-rotate-left"></i>
           </div>
           <span>Read later</span>
         </a>
-        <div class="nav-item">
+        {% endif %}
+        <a href={{ "/profile" if user["mode"] == "logged_in" else "/auth/login" }} class="nav-item">
           <div class="icon-box">
             <div class="user-profile-img">
-              {% if user and user.profileImage %}
-              <img src="{{ user.profileImage }}" alt="Profile" />
+              {% if user["mode"] == "logged_in" and user['user'].user_image %}
+              <img src="{{ user['user'].user_image }}" alt="Profile" />
               {% else %}
               <i class="fa-solid fa-user" style="font-size: 20px"></i>
               {% endif %}
             </div>
           </div>
-          <span>{{ user.Name if user else 'Guest' }}</span>
-        </div>
+          <span>{{ user['user'].username if user['mode'] == 'logged_in' else user['mode'] }}</span>
+        </a>
       </div>
     </nav>
 
     <!-- ─── MAIN CONTENT ─── -->
     <main class="main-content">
-      <div class="section-header">Books</div>
-
+      {% for reccomend_type in recommend_book %}
+      <div class="section-header">{{ reccomend_type }}</div>
       <div class="book-grid">
-        {% for book in books %}
+        {% for book in recommend_book[reccomend_type] %}
         <a
           class="book-card"
           href="/book/{{ book.id }}"
           id="book-card-{{ book.id }}"
         >
-          {% if book.cover %}
+          {% if book.image_url %}
           <img
             class="book-cover-img"
-            src="{{ book.cover }}"
-            alt="{{ book.title }}"
+            src="{{ book.image_url }}"
+            alt="{{ book.name }}"
           />
           {% else %}
           <div class="no-cover">
             <i class="fa-solid fa-book-open"></i>
           </div>
           {% endif %}
-          <div class="book-title">{{ book.title }}</div>
-          <div class="book-author">{{ book.author }}</div>
+          <div class="book-title">{{ book.name }}</div>
+          <div class="book-author">{{ book.author.name }}</div>
         </a>
         {% endfor %}
       </div>
+      {% endfor %}
     </main>
 
     <!-- ─── SCRIPTS ─── -->
@@ -459,15 +467,16 @@
 
         try {
           const response = await fetch(
-            `/api/search?q=${encodeURIComponent(query)}`,
+            `/search/engine?query=${encodeURIComponent(query)}`,
           );
           const books = await response.json();
+          console.log(books);
           suggestionsBox.innerHTML = "";
           if (books.length > 0) {
             books.forEach((book) => {
               const div = document.createElement("div");
               div.className = "suggestion-item";
-              div.innerHTML = highlightText(book.title, query);
+              div.innerHTML = highlightText(book.name, query);
               div.onclick = () => {
                 window.location.href = `/book/${book.id}`;
               };

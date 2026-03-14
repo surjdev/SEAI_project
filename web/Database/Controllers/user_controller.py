@@ -1,36 +1,25 @@
 from sqlalchemy.orm import Session, joinedload
 from Database.Model.models import User
 
+def user_in_database(db: Session, google_user_info: dict):
+    user = db.query(User).filter(User.email == google_user_info['email']).first()
+    return user
 
-def get_all_users(db: Session) -> list[dict]:
-    # ใช้ joinedload เพื่อดึง reviews และ readlater มาใน Query เดียว
-    users = db.query(User).options(
-        joinedload(User.reviews),
-        joinedload(User.readlater)
-    ).order_by(User.id).limit(100).all() 
-
-    result = []
-
-    for user in users:
-        
-        readlater_ids = [rl.book_id for rl in user.readlater]
-        
-        reviews = user.reviews
-        book_ratings = [{"book_id": r.book_id, "rating": r.book_rating} for r in reviews if r.book_rating is not None]
-        is_favourite = [{"book_id": r.book_id} for r in reviews if r.is_favourite]
-        comments = [{"book_id": r.book_id, "comment": r.comment} for r in reviews if r.comment]
-
-        result.append({
-            "user_id": user.id,
-            "username": user.username,
-            "email": user.email,
-            "birth_year": user.birth_year,
-            "location": user.location,
-            "user_image": user.user_image,
-            "book_rating": book_ratings,
-            "is_favourite": is_favourite,
-            "user_readlater": readlater_ids,
-            "comments": comments,
-        })
-    return result
-
+def login_or_register_user(db: Session, google_user_info: dict):
+    user = user_in_database(db, google_user_info)
+    
+    if user:
+        return user
+    try:
+        new_user = User(
+            username=google_user_info.get('name'),
+            email=google_user_info.get('email'),
+            user_image=google_user_info.get('picture')
+        )
+        db.add(new_user)
+        db.commit()
+        db.refresh(new_user)
+        return new_user
+    except Exception as e:
+        db.rollback()
+        raise e

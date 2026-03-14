@@ -1,39 +1,49 @@
+import os
 from flask import Flask, request, jsonify
 from functools import wraps
 from model import Recommender, BUFFER_PATH
-from download_buffer import fetch_user_reviews
+from database import fetch_user_reviews
 import asyncio
 
 print("Initializing AI API server...")
 
-INTERNAL_TOKEN = "RECOMMENDER_MODEL_SECRET_KEY"
+INTERNAL_TOKEN = os.getenv("INTERNAL_TOKEN")
 
 async def download_buffer(buffer_path, max_attempts=5, timeout=10):
     attempt_count = 0
-    status = {}
-    while not buffer_path.exists():
-        if attempt_count >= max_attempts:
-            status = {"download": "failed"}
-        
+    # Initialize a default failure status
+    status = {"download": "failed", "reason": "unknown"} 
+    
+    while attempt_count < max_attempts:
+        if buffer_path.exists():
+            return {"download": "success", "message": "File already exists"}
+
         try:
             print(f"Attempt {attempt_count + 1}: Querying database...")
-            status = await asyncio.wait_for(fetch_user_reviews(buffer_path), timeout=timeout)
+            # Capture the actual result from fetch_user_reviews
+            result = await asyncio.wait_for(fetch_user_reviews(buffer_path), timeout=timeout)
             
-            if status.get("download") == "success":
+            if result and result.get("download") == "success":
                 print("Download successful.")
-                return status
+                return result
+            
+            status = result # Update status with the latest failure info from the DB call
+            
         except asyncio.TimeoutError:
-            print(f"Request timed out after {timeout} seconds. Retrying...")
-
+            print(f"Request timed out. Retrying...")
+            status = {"download": "failed", "reason": "timeout"}
         except Exception as e:
             print(f"An unexpected error occurred: {e}")
+            status = {"download": "failed", "reason": str(e)}
             
         attempt_count += 1
+    
+    return status # Always return a dict after the loop finishes
 
 if not BUFFER_PATH.exists():
     status = asyncio.run(download_buffer(BUFFER_PATH))
     if status.get("download") == "failed":
-        FileNotFoundError(f"Buffer file '{BUFFER_PATH}' not found")
+        raise FileNotFoundError(f"Buffer file '{BUFFER_PATH}' not found")
 
 print("Buffer file is ready. Starting server...")
 
@@ -69,7 +79,6 @@ def recommend():
 def update_model():
     status = asyncio.run(download_buffer(BUFFER_PATH))
     if status.get("download") == "success":
-        BUFFER_PATH.unlink(missing_ok=True)
         status.update(recommender.update())
     return jsonify(status)
 
