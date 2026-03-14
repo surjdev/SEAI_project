@@ -63,15 +63,25 @@ services:
       - db_server
       - ai_api
 
-  ngrok:
-    image: ngrok/ngrok:3
-    container_name: ngrok-tunnel
+  # ngrok:
+  #   image: ngrok/ngrok:3
+  #   container_name: ngrok-tunnel
+  #   restart: unless-stopped
+  #   ports:
+  #     - "4040:4040"
+  #   environment:
+  #     - NGROK_AUTHTOKEN=${NGROK_AUTHTOKEN}
+  #   command: http web_app:5000
+  #   depends_on:
+  #     - web_app
+
+  cloudflare_tunnel:
+    image: cloudflare/cloudflared:2026.3.0
+    container_name: cloudflare-tunnel
     restart: unless-stopped
-    ports:
-      - "4040:4040"
     environment:
-      - NGROK_AUTHTOKEN=${NGROK_AUTHTOKEN}
-    command: http web_app:5000
+      - TUNNEL_TOKEN=${CLOUDFLARE_TUNNEL_TOKEN}
+    command: tunnel --no-autoupdate run
     depends_on:
       - web_app
 

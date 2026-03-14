@@ -3,8 +3,8 @@ import os
 import re
 import requests
 
+# from werkzeug.middleware.proxy_fix import ProxyFix
 from flask import Flask, render_template, request, jsonify
-# from flask_caching import Cache
 from flask_login import LoginManager, current_user, login_required
 from auth import auth_bp, oauth
 
@@ -22,7 +22,8 @@ INTERNAL_TOKEN = os.getenv('INTERNAL_TOKEN')
 
 # config
 app = Flask(__name__, template_folder="templates")
-app.secret_key = os.getenv('FLASK_SECRET_ID')
+# app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
+app.config['SECRET_KEY'] = os.getenv('FLASK_SECRET_ID')
 app.config["CACHE_TYPE"] = "SimpleCache"   # "RedisCache" for Redis
 app.config["CACHE_DEFAULT_TIMEOUT"] = 300  # second
 
@@ -44,7 +45,8 @@ app.register_blueprint(auth_bp, url_prefix='/auth')
 
 @login_manager.user_loader
 def load_user(user_id):
-    return db.query(User).get(int(user_id))
+    with get_db() as db:
+        return db.query(User).get(int(user_id))
 
 ########################### Page routes ###########################
 
@@ -68,17 +70,25 @@ recommend_name_mapper = {
     "most_popular": "Most Popular",
     "most_rated": "Most Rated"
 }
+
+reccomend_book_cache = {
+    "is_auth": "Guest",
+    "recommend_book": {}
+}
 @app.route('/home')
 def home_page():
     user_data = check_user_auth()
     user_id = user_data["user"].id if user_data["mode"] == "login" else None
-    reccomend_book = requests.post(f"{AI_SERVICE_URL}/recommend/api", data={"user_id": user_id}, headers={"Authorization": f"Bearer {INTERNAL_TOKEN}"})
-    reccomend_book = reccomend_book.json()
-    with get_db() as db:
-        reccomend_book = get_book_details(db, reccomend_book)
-        for recommend_type in reccomend_book:
-            reccomend_book[recommend_name_mapper[recommend_type]] = reccomend_book.pop(recommend_type)
-    return render_template('homepage.html', user=user_data, recommend_book=reccomend_book)
+    if reccomend_book_cache["is_auth"] != user_data["mode"] or reccomend_book_cache["recommend_book"] == {}:
+        reccomend_book = requests.post(f"{AI_SERVICE_URL}/recommend/api", data={"user_id": user_id}, headers={"Authorization": f"Bearer {INTERNAL_TOKEN}"})
+        reccomend_book = reccomend_book.json()
+        reccomend_book_cache["is_auth"] = user_data["mode"]
+        with get_db() as db:
+            reccomend_book = get_book_details(db, reccomend_book)
+            for recommend_type in reccomend_book:
+                reccomend_book[recommend_name_mapper[recommend_type]] = reccomend_book.pop(recommend_type)
+            reccomend_book_cache["recommend_book"] = reccomend_book
+    return render_template('homepage.html', user=user_data, recommend_book=reccomend_book_cache["recommend_book"])
 
 @app.route('/search')
 def search_page():
@@ -162,14 +172,10 @@ def review():
     book_id = data.get("book_id")
     rating  = data.get("rating")
     comment = data.get("comment", "").strip()
+    
+    rating = int(rating) if int(rating) != 0 else None
+    comment = comment if comment != "" else None
 
-    # ── Validate required fields ──────────────────────────────────────────────
-    if not comment or not rating:
-        return jsonify({"error": "Missing required fields 'comment' and 'rating'"}), 400
-    rating = int(rating)
-    rating = rating if rating != 0 else None
-    comment = comment if comment else None
-    # ── Upsert the review ─────────────────────────────────────────────────────
     with get_db() as db:
         result = update_user_review(db, current_user.id, book_id, rating, comment)
         return jsonify(result), 200
@@ -183,7 +189,7 @@ def sanitize(query: str) -> str:
 @app.route('/search/engine')
 def book_search():
     query = sanitize(request.args.get('query', ''))
-    result = search_book_fast(query)
+    result = search_book_fast(query, limit=30)
     return jsonify(result)
 
 if __name__ == "__main__":
