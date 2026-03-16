@@ -1,4 +1,5 @@
 import os
+import shutil
 from flask import Flask, request, jsonify
 from functools import wraps
 from model import Recommender, BUFFER_PATH
@@ -9,19 +10,19 @@ print("Initializing AI API server...")
 
 INTERNAL_TOKEN = os.getenv("INTERNAL_TOKEN")
 
-async def download_buffer(buffer_path, max_attempts=5, timeout=10):
+async def download_buffer(file_to_save_path, max_attempts=5, timeout=10):
     attempt_count = 0
     # Initialize a default failure status
     status = {"download": "failed", "reason": "unknown"} 
     
     while attempt_count < max_attempts:
-        if buffer_path.exists():
+        if file_to_save_path.exists():
             return {"download": "success", "message": "File already exists"}
 
         try:
             print(f"Attempt {attempt_count + 1}: Querying database...")
             # Capture the actual result from fetch_user_reviews
-            result = await asyncio.wait_for(fetch_user_reviews(buffer_path), timeout=timeout)
+            result = await asyncio.wait_for(fetch_user_reviews(file_to_save_path), timeout=timeout)
             
             if result and result.get("download") == "success":
                 print("Download successful.")
@@ -71,15 +72,26 @@ def require_token(f):
 def recommend():
     user_id = request.form.get("user_id")
     limit = request.form.get("limit", 10, type=int)
+    if not user_id:
+        user_id = None
     recommendations = recommender.recommend(user_id, limit)
     return jsonify(recommendations)
 
 @app.route("/recommend/update", methods=["POST"])
 @require_token
 def update_model():
-    status = asyncio.run(download_buffer(BUFFER_PATH))
+    temp_name = "temp.csv"
+    temp_path = BUFFER_PATH.with_name(temp_name)
+
+    status = asyncio.run(download_buffer(temp_path))
+
     if status.get("download") == "success":
+        BUFFER_PATH.unlink()
+        temp_path.rename(BUFFER_PATH)
         status.update(recommender.update())
+    else:
+        temp_path.unlink(missing_ok=True)
+
     return jsonify(status)
 
 def transform_data(data:dict):

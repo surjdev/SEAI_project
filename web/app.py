@@ -78,15 +78,17 @@ reccomend_book_cache = {
 @app.route('/home')
 def home_page():
     user_data = check_user_auth()
-    user_id = user_data["user"].id if user_data["mode"] == "login" else None
+    user_id = user_data["user"].id if user_data["mode"] == "logged_in" else None
     if reccomend_book_cache["is_auth"] != user_data["mode"] or reccomend_book_cache["recommend_book"] == {}:
         reccomend_book = requests.post(f"{AI_SERVICE_URL}/recommend/api", data={"user_id": user_id}, headers={"Authorization": f"Bearer {INTERNAL_TOKEN}"})
         reccomend_book = reccomend_book.json()
         reccomend_book_cache["is_auth"] = user_data["mode"]
         with get_db() as db:
             reccomend_book = get_book_details(db, reccomend_book)
-            for recommend_type in reccomend_book:
-                reccomend_book[recommend_name_mapper[recommend_type]] = reccomend_book.pop(recommend_type)
+            old_name = list(reccomend_book.keys())
+            for recommend_type in old_name:
+                new_name = recommend_name_mapper[recommend_type]
+                reccomend_book[new_name] = reccomend_book.pop(recommend_type)
             reccomend_book_cache["recommend_book"] = reccomend_book
     return render_template('homepage.html', user=user_data, recommend_book=reccomend_book_cache["recommend_book"])
 

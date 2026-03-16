@@ -2,6 +2,7 @@ import os
 from sqlalchemy import create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker
 from contextlib import contextmanager
+from sqlalchemy import text
 
 DATABASE_URL = os.getenv('DATABASE_URL')
 
@@ -17,9 +18,7 @@ def get_db():
         yield db
     finally:
         db.close()
-
-from sqlalchemy import text
-
+        
 def sync_sequences(db_session):
     tables = ['users']
     try:

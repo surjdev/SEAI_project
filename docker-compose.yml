@@ -43,6 +43,8 @@ services:
       - INTERNAL_TOKEN=${INTERNAL_TOKEN}
     depends_on:
       - db_server
+    volumes:
+      - ./AI/Buffer:/app/Buffer
 
   web_app:
     build:
@@ -84,6 +86,3 @@ services:
     command: tunnel --no-autoupdate run
     depends_on:
       - web_app
-
-volumes:
-  pgdata:
